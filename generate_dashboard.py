@@ -10,10 +10,11 @@ Behaviour
 - First run (Meal_Data_Dashboard.csv does not exist):
     Computes every date present in meal_log.csv and writes all rows.
 
-- Incremental run (meal_log.csv updated, new dates added):
-    Reads existing dashboard dates.
-    Only computes and appends net-new dates.
-    Existing rows are never modified.
+- Incremental run (meal_log.csv updated):
+    Recomputes every date that has entries in meal_log.csv — correctly
+    handles same-day additions where a date already exists in the dashboard
+    but has received new log entries since the last run.
+    Dashboard rows for dates with no log entries are preserved as-is.
 
 - Goal update run (user_goals.csv updated, --recompute-from DATE passed):
     Recomputes every date >= DATE from scratch using the updated goals.
@@ -416,15 +417,24 @@ def main():
         print(f"Recomputing {len(dates_to_compute)} date(s): {dates_to_compute}")
 
     else:
-        new_dates = [d for d in all_log_dates if d not in existing_dates]
-        if not new_dates:
-            print(f"\nDashboard is up to date — no new dates found.")
-            print(f"Existing dates: {sorted(existing_dates)}")
-            sys.exit(0)
-        print(f"\nIncremental run — {len(existing_dates)} date(s) already present.")
-        print(f"New date(s) to compute: {new_dates}")
-        dates_to_compute = new_dates
-        preserved_rows   = existing_rows  # keep all existing rows
+        # Recompute every date that has log entries — this correctly handles
+        # same-day additions where a date already exists in the dashboard but
+        # has received new entries since the last run.
+        # Dates in the dashboard that have NO log entries are preserved as-is.
+        dates_to_compute = all_log_dates
+        preserved_rows   = {d: r for d, r in existing_rows.items()
+                            if d not in all_log_dates}
+
+        new_dates      = [d for d in all_log_dates if d not in existing_dates]
+        refresh_dates  = [d for d in all_log_dates if d in existing_dates]
+
+        print(f"\nIncremental run.")
+        if new_dates:
+            print(f"  New date(s)     : {new_dates}")
+        if refresh_dates:
+            print(f"  Refreshing date(s): {refresh_dates}  "
+                  f"(recomputes totals to include any new entries on existing dates)")
+        print(f"  Preserving {len(preserved_rows)} dashboard row(s) with no log entries")
 
     # ── Compute ───────────────────────────────────────────────
     newly_computed = {}
