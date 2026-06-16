@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Food Log Entry</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --border:    #2a2d3a;
+      --accent:    #4ade80;
+      --accent-dim:#1a3d27;
+      --text:      #e8eaf0;
+      --muted:     #7a7f94;
+      --error:     #f87171;
+      --radius:    10px;
+      --font:      -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.5;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+    }
+
+    header {
+      width: 100%;
+      max-width: 420px;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    header p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    input, select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px;
+      padding: 12px 14px;
+      appearance: none;
+      -webkit-appearance: none;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus, select:focus { border-color: var(--accent); }
+
+    input[type="date"] { min-height: 48px; }
+
+    /* Custom select arrow */
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: "";
+      pointer-events: none;
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0; height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 6px solid var(--muted);
+    }
+
+    /* ── Typeahead food field ─────────────────────────────────── */
+    .typeahead-wrap { position: relative; }
+
+    .typeahead-wrap input {
+      padding-right: 36px;
+    }
+
+    /* clear button */
+    .typeahead-clear {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 2px 4px;
+      display: none;
+    }
+    .typeahead-clear.visible { display: block; }
+
+    .typeahead-list {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      overflow: hidden;
+      z-index: 50;
+      display: none;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .typeahead-list.open { display: block; }
+
+    .typeahead-item {
+      padding: 12px 14px;
+      font-size: 15px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    .typeahead-item:last-child { border-bottom: none; }
+    .typeahead-item:hover,
+    .typeahead-item.active {
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    /* highlight matched chars */
+    .typeahead-item mark {
+      background: none;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .typeahead-empty {
+      padding: 12px 14px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    /* Grams */
+    .grams-row { position: relative; }
+    .grams-row input { padding-right: 40px; }
+    .unit-badge {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      background: var(--accent);
+      color: #0a1a10;
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 700;
+      padding: 14px;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    button[type="submit"]:active { transform: scale(0.98); opacity: 0.85; }
+    button[type="submit"]:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 100;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    #toast.success { border-color: var(--accent); color: var(--accent); }
+    #toast.error   { border-color: var(--error);  color: var(--error); }
+
+    /* Settings */
+    details {
+      width: 100%;
+      max-width: 420px;
+      margin-top: 16px;
+    }
+
+    summary {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: var(--muted);
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 0;
+      user-select: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::before {
+      content: "›";
+      font-size: 16px;
+      transition: transform 0.15s;
+      display: inline-block;
+    }
+    details[open] summary::before { transform: rotate(90deg); }
+
+    .settings-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    .settings-card .field input {
+      font-size: 14px;
+      font-family: "SF Mono", "Fira Code", monospace;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .hint a { color: var(--accent); text-decoration: none; }
+
+    .save-btn {
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      border-radius: 8px;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 16px;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.15s;
+    }
+    .save-btn:hover { background: var(--accent-dim); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Food Log Entry</h1>
+    <p>Log a meal to your nutrition tracker</p>
+  </header>
+
+  <div class="card">
+
+    <!-- Date -->
+    <div class="field">
+      <label for="date">Date</label>
+      <input type="date" id="date" required>
+    </div>
+
+    <!-- Meal -->
+    <div class="field">
+      <label for="meal">Meal</label>
+      <div class="select-wrap">
+        <select id="meal" required>
+          <option value="">Select meal</option>
+          <option value="Breakfast">Breakfast</option>
+          <option value="Lunch">Lunch</option>
+          <option value="Dinner">Dinner</option>
+          <option value="Snack">Snack</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Food — searchable typeahead -->
+    <div class="field">
+      <label for="food-input">Food</label>
+      <div class="typeahead-wrap" id="typeahead-wrap">
+        <input
+          type="text"
+          id="food-input"
+          placeholder="Type to search food…"
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+          required
+        >
+        <button class="typeahead-clear" id="food-clear" tabindex="-1" aria-label="Clear">×</button>
+        <div class="typeahead-list" id="food-list" role="listbox"></div>
+      </div>
+      <!-- hidden field holds the resolved food_name value -->
+      <input type="hidden" id="food-value">
+    </div>
+
+    <!-- Grams -->
+    <div class="field">
+      <label for="grams">Grams</label>
+      <div class="grams-row">
+        <input type="number" id="grams" min="0.1" max="5000" step="0.1"
+               inputmode="decimal" placeholder="0" required>
+        <span class="unit-badge">g</span>
+      </div>
+    </div>
+
+    <button type="submit" id="submit-btn" onclick="submitEntry()">Log Entry</button>
+
+  </div>
+
+  <!-- Settings — collapsed by default, stays closed after Save -->
+  <details id="settings-panel">
+    <summary>Settings</summary>
+    <div class="settings-card">
+
+      <div class="field">
+        <label for="gh-token">GitHub Personal Access Token</label>
+        <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxx"
+               autocomplete="off" spellcheck="false">
+        <p class="hint">
+          Needs <strong>Contents: Read &amp; Write</strong> permission on this repo.<br>
+          <a href="https://github.com/settings/tokens?type=beta" target="_blank">
+            Create a fine-grained token →
+          </a><br>
+          Stored only in this browser — never sent anywhere except GitHub.
+        </p>
+      </div>
+
+      <div class="field">
+        <label for="gh-owner">GitHub Username</label>
+        <input type="text" id="gh-owner" placeholder="your-username"
+               autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field">
+        <label for="gh-repo">Repository Name</label>
+        <input type="text" id="gh-repo" placeholder="MyFitnessClone"
+               autocomplete="off" spellcheck="false">
+      </div>
+
+      <button class="save-btn" onclick="saveSettings()">Save Settings</button>
+    </div>
+  </details>
+
+  <div id="toast"></div>
+
+  <script>
+    // ── Food library (name → food_id) ───────────────────────────
+    // @@FOODS_START@@
+    const FOODS = [
+      { name: "ButcherBox 85/15 Beef",            id: "butcherbox-8515-ground-beef" },
+      { name: "WFM Organic Sweet Potato",          id: "wfm-organic-sweet-potato" },
+      { name: "365 White Quinoa",                  id: "365-white-quinoa" },
+      { name: "Medium Hass Avocado",               id: "medium-hass-avocado" },
+      { name: "Organic Valley Grassmilk Cheddar",  id: "organic-valley-grassmilk-cheddar" },
+      { name: "Vital Farms Large Eggs",            id: "vital-farms-large-eggs" },
+      { name: "ButcherBox Grass-Fed Ribeye",       id: "butcherbox-grass-fed-ribeye" },
+      { name: "ButcherBox Chuck Roast",            id: "butcherbox-chuck-roast" },
+      { name: "Nature Made D3 Gummies",            id: "nature-made-d3-gummies" },
+      { name: "Garden of Life Vitamin C",          id: "garden-of-life-vitamin-c" },
+    ];
+    // @@FOODS_END@@
+
+    // ── Typeahead state ─────────────────────────────────────────
+    let activeIndex  = -1;
+    let selectedFood = null;   // { name, id } when confirmed
+
+    const foodInput  = document.getElementById("food-input");
+    const foodValue  = document.getElementById("food-value");
+    const foodList   = document.getElementById("food-list");
+    const foodClear  = document.getElementById("food-clear");
+
+    function filterFoods(query) {
+      if (!query) return FOODS;
+      const q = query.toLowerCase();
+      return FOODS.filter(f => f.name.toLowerCase().includes(q));
+    }
+
+    function highlightMatch(name, query) {
+      if (!query) return name;
+      const idx = name.toLowerCase().indexOf(query.toLowerCase());
+      if (idx === -1) return name;
+      return (
+        name.slice(0, idx) +
+        "<mark>" + name.slice(idx, idx + query.length) + "</mark>" +
+        name.slice(idx + query.length)
+      );
+    }
+
+    function renderList(matches, query) {
+      activeIndex = -1;
+      if (matches.length === 0) {
+        foodList.innerHTML = `<div class="typeahead-empty">No foods match "${query}"</div>`;
+      } else {
+        foodList.innerHTML = matches.map((f, i) =>
+          `<div class="typeahead-item" role="option" data-idx="${i}">${highlightMatch(f.name, query)}</div>`
+        ).join("");
+        // attach click handlers
+        foodList.querySelectorAll(".typeahead-item").forEach((el, i) => {
+          el.addEventListener("mousedown", e => {
+            e.preventDefault();   // prevent blur firing first
+            selectFood(matches[i]);
+          });
+        });
+      }
+      foodList.classList.add("open");
+    }
+
+    function selectFood(food) {
+      selectedFood      = food;
+      foodInput.value   = food.name;
+      foodValue.value   = food.name;
+      foodList.classList.remove("open");
+      foodClear.classList.add("visible");
+      foodInput.blur();
+    }
+
+    function clearFood() {
+      selectedFood      = null;
+      foodInput.value   = "";
+      foodValue.value   = "";
+      foodClear.classList.remove("visible");
+      foodList.classList.remove("open");
+      foodInput.focus();
+    }
+
+    foodInput.addEventListener("input", () => {
+      const q = foodInput.value.trim();
+      selectedFood = null;         // user is typing again — reset selection
+      foodValue.value = "";
+      foodClear.classList.toggle("visible", q.length > 0);
+      renderList(filterFoods(q), q);
+    });
+
+    foodInput.addEventListener("focus", () => {
+      const q = foodInput.value.trim();
+      renderList(filterFoods(q), q);
+    });
+
+    foodInput.addEventListener("blur", () => {
+      // small delay so mousedown on list items fires first
+      setTimeout(() => foodList.classList.remove("open"), 150);
+    });
+
+    // Keyboard navigation
+    foodInput.addEventListener("keydown", e => {
+      const items = foodList.querySelectorAll(".typeahead-item");
+      if (!foodList.classList.contains("open") || items.length === 0) return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        activeIndex = Math.min(activeIndex + 1, items.length - 1);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        activeIndex = Math.max(activeIndex - 1, 0);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (activeIndex >= 0) {
+          const query   = foodInput.value.trim();
+          const matches = filterFoods(query);
+          selectFood(matches[activeIndex]);
+        }
+        return;
+      } else if (e.key === "Escape") {
+        foodList.classList.remove("open");
+        return;
+      }
+
+      items.forEach((el, i) => el.classList.toggle("active", i === activeIndex));
+      if (activeIndex >= 0) items[activeIndex].scrollIntoView({ block: "nearest" });
+    });
+
+    foodClear.addEventListener("click", clearFood);
+
+    // Close list when clicking outside
+    document.addEventListener("click", e => {
+      if (!document.getElementById("typeahead-wrap").contains(e.target)) {
+        foodList.classList.remove("open");
+      }
+    });
+
+    // ── Helpers ─────────────────────────────────────────────────
+    function uuid() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function isoNow() {
+      return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+    }
+
+    function toast(msg, type = "success") {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.className = `show ${type}`;
+      clearTimeout(el._t);
+      el._t = setTimeout(() => { el.className = ""; }, 3200);
+    }
+
+    // ── Settings ─────────────────────────────────────────────────
+    function loadSettings() {
+      document.getElementById("gh-token").value = localStorage.getItem("gh_token") || "";
+      document.getElementById("gh-owner").value = localStorage.getItem("gh_owner") || "";
+      document.getElementById("gh-repo").value  = localStorage.getItem("gh_repo")  || "";
+    }
+
+    function saveSettings() {
+      const token = document.getElementById("gh-token").value.trim();
+      const owner = document.getElementById("gh-owner").value.trim();
+      const repo  = document.getElementById("gh-repo").value.trim();
+      if (!token || !owner || !repo) {
+        toast("Fill in all three fields", "error"); return;
+      }
+      localStorage.setItem("gh_token", token);
+      localStorage.setItem("gh_owner", owner);
+      localStorage.setItem("gh_repo",  repo);
+      // Close the details panel
+      document.getElementById("settings-panel").removeAttribute("open");
+      toast("Settings saved");
+    }
+
+    // ── Default date to today ────────────────────────────────────
+    function setDefaultDate() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      document.getElementById("date").value = `${y}-${m}-${day}`;
+    }
+
+    // ── GitHub API ───────────────────────────────────────────────
+    async function getFile(token, owner, repo, path) {
+      const res = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+        { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" } }
+      );
+      if (!res.ok) throw new Error(`GitHub ${res.status}: ${await res.text()}`);
+      return res.json();
+    }
+
+    async function putFile(token, owner, repo, path, message, base64Content, sha) {
+      const res = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/vnd.github+json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ message, content: base64Content, sha }),
+        }
+      );
+      if (!res.ok) throw new Error(`GitHub ${res.status}: ${await res.text()}`);
+      return res.json();
+    }
+
+    // ── Submit ───────────────────────────────────────────────────
+    async function submitEntry() {
+      const token = localStorage.getItem("gh_token");
+      const owner = localStorage.getItem("gh_owner");
+      const repo  = localStorage.getItem("gh_repo");
+
+      if (!token || !owner || !repo) {
+        toast("Open Settings and save your GitHub details first", "error");
+        document.getElementById("settings-panel").setAttribute("open", "");
+        return;
+      }
+
+      const date  = document.getElementById("date").value;
+      const meal  = document.getElementById("meal").value;
+      const grams = document.getElementById("grams").value;
+
+      if (!date || !meal || !selectedFood || !grams) {
+        toast("Fill in all fields before logging", "error"); return;
+      }
+      if (parseFloat(grams) <= 0) {
+        toast("Grams must be greater than 0", "error"); return;
+      }
+
+      const btn = document.getElementById("submit-btn");
+      btn.disabled = true;
+      btn.textContent = "Saving…";
+
+      try {
+        const file    = await getFile(token, owner, repo, "meal_log.csv");
+        const current = atob(file.content.replace(/\n/g, ""));
+        const logId   = uuid();
+        const now     = isoNow();
+        const newRow  = `${logId},default,${date},${meal},${selectedFood.id},"${selectedFood.name}",${grams},${now}\n`;
+        const updated = current.endsWith("\n") ? current + newRow : current + "\n" + newRow;
+        const b64     = btoa(unescape(encodeURIComponent(updated)));
+
+        await putFile(
+          token, owner, repo, "meal_log.csv",
+          `log: ${selectedFood.name} ${grams}g ${date} ${meal}`,
+          b64, file.sha
+        );
+
+        toast(`✓ Logged ${grams}g ${selectedFood.name}`);
+
+        // Reset food and grams; keep date and meal for quick multi-entry
+        clearFood();
+        document.getElementById("grams").value = "";
+        document.getElementById("food-input").focus();
+
+      } catch (err) {
+        console.error(err);
+        const msg = err.message.includes("409")
+          ? "Conflict — file was updated elsewhere. Wait a moment and try again."
+          : `Error: ${err.message}`;
+        toast(msg, "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Log Entry";
+      }
+    }
+
+    // ── Init ─────────────────────────────────────────────────────
+    loadSettings();
+    setDefaultDate();
+
+    // Open settings on first visit only (no token saved yet)
+    if (!localStorage.getItem("gh_token")) {
+      document.getElementById("settings-panel").setAttribute("open", "");
+    }
+  </script>
+
+</body>
+</html>
