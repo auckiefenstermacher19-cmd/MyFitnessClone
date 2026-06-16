@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Meal Log Editor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --border:    #2a2d3a;
+      --accent:    #4ade80;
+      --text:      #e8eaf0;
+      --muted:     #7a7f94;
+      --error:     #f87171;
+      --radius:    10px;
+      --font:      -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.5;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+    }
+
+    header {
+      width: 100%;
+      max-width: 480px;
+      margin-bottom: 28px;
+    }
+
+    header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+    header p  { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+    /* Date picker card */
+    .date-card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    input[type="date"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px;
+      padding: 12px 14px;
+      appearance: none;
+      -webkit-appearance: none;
+      outline: none;
+      min-height: 48px;
+      transition: border-color 0.15s;
+    }
+    input[type="date"]:focus { border-color: var(--accent); }
+
+    /* Entries section */
+    .entries-wrap {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .entries-header {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+      padding: 0 4px;
+    }
+
+    /* State views */
+    .state-box {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* Entry rows */
+    .entry-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .entry-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      transition: border-color 0.15s, opacity 0.2s;
+    }
+
+    .entry-row.deleting {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    /* Delete button — red circle with line */
+    .delete-btn {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2.5px solid var(--error);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+      padding: 0;
+    }
+    .delete-btn:hover { background: rgba(248, 113, 113, 0.12); }
+    .delete-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: var(--error);
+      stroke-width: 2.5;
+      stroke-linecap: round;
+    }
+
+    /* Entry text */
+    .entry-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .entry-food {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .entry-meta {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .entry-grams {
+      flex-shrink: 0;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      text-align: right;
+    }
+
+    .entry-grams span {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--muted);
+    }
+
+    /* Summary row */
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 4px 0;
+      font-size: 13px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      margin-top: 4px;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 100;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    #toast.success { border-color: var(--accent); color: var(--accent); }
+    #toast.error   { border-color: var(--error);  color: var(--error); }
+
+    /* Back link */
+    #back-link {
+      display: block;
+      width: 100%;
+      max-width: 480px;
+      margin-top: 24px;
+      padding: 13px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      text-decoration: none;
+      background: var(--surface);
+      transition: color 0.15s, border-color 0.15s;
+    }
+    #back-link:hover { color: var(--text); border-color: var(--muted); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Meal Log Editor</h1>
+    <p>Select a date to view and remove entries</p>
+  </header>
+
+  <!-- Date picker -->
+  <div class="date-card">
+    <label for="date">Date</label>
+    <input type="date" id="date">
+  </div>
+
+  <!-- Entries for selected date -->
+  <div class="entries-wrap">
+    <div class="entries-header" id="entries-label">Entries</div>
+    <div id="entries-container">
+      <div class="state-box">Select a date to load entries</div>
+    </div>
+  </div>
+
+  <a href="Food_Log_Entry.html" id="back-link">← Back to Food Log Entry</a>
+
+  <div id="toast"></div>
+
+  <script>
+    // ── State ────────────────────────────────────────────────────
+    let ALL_ROWS   = [];   // full parsed meal_log rows (all dates)
+    let FILE_SHA   = "";   // current SHA of meal_log.csv on GitHub
+    let LOADED_DATE = "";  // which date is currently displayed
+
+    // ── GitHub helpers ───────────────────────────────────────────
+    function cfg() {
+      return {
+        token: localStorage.getItem("gh_token"),
+        owner: localStorage.getItem("gh_owner"),
+        repo:  localStorage.getItem("gh_repo"),
+      };
+    }
+
+    function ghHeaders(token) {
+      return {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+      };
+    }
+
+    async function getFile(path) {
+      const { token, owner, repo } = cfg();
+      const res = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+        { headers: ghHeaders(token) }
+      );
+      if (!res.ok) throw new Error(`GitHub ${res.status}: ${await res.text()}`);
+      return res.json();
+    }
+
+    async function putFile(path, message, base64Content, sha) {
+      const { token, owner, repo } = cfg();
+      const res = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+        {
+          method: "PUT",
+          headers: { ...ghHeaders(token), "Content-Type": "application/json" },
+          body: JSON.stringify({ message, content: base64Content, sha }),
+        }
+      );
+      if (!res.ok) throw new Error(`GitHub ${res.status}: ${await res.text()}`);
+      return res.json();
+    }
+
+    // ── CSV helpers ──────────────────────────────────────────────
+    function parseCSV(text) {
+      const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+      const header = lines[0].split(",");
+      const rows = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        // Handle quoted fields
+        const vals = [];
+        let cur = "", inQ = false;
+        for (let c = 0; c < line.length; c++) {
+          if (line[c] === '"') { inQ = !inQ; }
+          else if (line[c] === "," && !inQ) { vals.push(cur); cur = ""; }
+          else { cur += line[c]; }
+        }
+        vals.push(cur);
+        const obj = {};
+        header.forEach((h, idx) => { obj[h.trim()] = (vals[idx] || "").trim(); });
+        rows.push(obj);
+      }
+      return { header, rows };
+    }
+
+    function rowsToCSV(header, rows) {
+      const lines = [header.join(",")];
+      for (const row of rows) {
+        const vals = header.map(h => {
+          const v = row[h] || "";
+          return v.includes(",") ? `"${v}"` : v;
+        });
+        lines.push(vals.join(","));
+      }
+      return lines.join("\n") + "\n";
+    }
+
+    // ── Load meal_log from GitHub ────────────────────────────────
+    async function loadMealLog() {
+      const { token } = cfg();
+      if (!token) {
+        showState("No GitHub token found. Configure settings in Food Log Entry first.");
+        return;
+      }
+      showState("Loading…");
+      try {
+        const file   = await getFile("meal_log.csv");
+        FILE_SHA     = file.sha;
+        const text   = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ""))));
+        const parsed = parseCSV(text);
+        ALL_ROWS     = parsed.rows;
+        ALL_ROWS._header = parsed.header;
+        renderDate(document.getElementById("date").value);
+      } catch (err) {
+        showState(`Error loading meal log: ${err.message}`);
+      }
+    }
+
+    // ── Render entries for a given date ─────────────────────────
+    function renderDate(dateStr) {
+      LOADED_DATE = dateStr;
+      const label = document.getElementById("entries-label");
+
+      if (!ALL_ROWS.length) {
+        label.textContent = "Entries";
+        showState("Meal log not loaded yet.");
+        return;
+      }
+
+      const entries = ALL_ROWS.filter(r => r.log_date === dateStr);
+      label.textContent = dateStr
+        ? `Entries for ${formatDate(dateStr)}`
+        : "Entries";
+
+      if (!dateStr) {
+        showState("Select a date to load entries.");
+        return;
+      }
+
+      if (entries.length === 0) {
+        showState("No entries found for this date.");
+        return;
+      }
+
+      // Sort by meal order
+      const MEAL_ORDER = { Breakfast: 0, Lunch: 1, Dinner: 2, Snack: 3 };
+      entries.sort((a, b) =>
+        (MEAL_ORDER[a.meal_type] ?? 9) - (MEAL_ORDER[b.meal_type] ?? 9)
+      );
+
+      const container = document.getElementById("entries-container");
+      container.innerHTML = "";
+
+      const list = document.createElement("div");
+      list.className = "entry-list";
+
+      entries.forEach(row => {
+        const div = document.createElement("div");
+        div.className = "entry-row";
+        div.dataset.logId = row.log_id;
+        div.innerHTML = `
+          <button class="delete-btn" aria-label="Delete entry" onclick="deleteEntry('${row.log_id}', this)">
+            <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <line x1="2" y1="7" x2="12" y2="7"/>
+            </svg>
+          </button>
+          <div class="entry-info">
+            <div class="entry-food">${row.food_name_snapshot}</div>
+            <div class="entry-meta">${row.meal_type}</div>
+          </div>
+          <div class="entry-grams">${parseFloat(row.grams).toFixed(1)}<span> g</span></div>
+        `;
+        list.appendChild(div);
+      });
+
+      container.appendChild(list);
+
+      // Summary
+      const summary = document.createElement("div");
+      summary.className = "summary-row";
+      const totalG = entries.reduce((s, r) => s + parseFloat(r.grams || 0), 0);
+      summary.innerHTML = `
+        <span>${entries.length} entr${entries.length === 1 ? "y" : "ies"}</span>
+        <span>${totalG.toFixed(1)} g total</span>
+      `;
+      container.appendChild(summary);
+    }
+
+    // ── Delete a single entry ────────────────────────────────────
+    async function deleteEntry(logId, btn) {
+      const row = document.querySelector(`[data-log-id="${logId}"]`);
+      if (!row) return;
+
+      // Find the entry to show in confirmation
+      const entry = ALL_ROWS.find(r => r.log_id === logId);
+      const label = entry
+        ? `${entry.food_name_snapshot} · ${entry.meal_type} · ${parseFloat(entry.grams).toFixed(1)}g`
+        : logId;
+
+      if (!confirm(`Remove this entry?\n\n${label}`)) return;
+
+      row.classList.add("deleting");
+
+      try {
+        // Re-fetch to get the latest SHA (avoids conflicts)
+        const file  = await getFile("meal_log.csv");
+        FILE_SHA    = file.sha;
+        const text  = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ""))));
+        const { header, rows } = parseCSV(text);
+
+        // Remove the target row
+        const filtered = rows.filter(r => r.log_id !== logId);
+
+        if (filtered.length === rows.length) {
+          toast("Entry not found in current file — may have already been removed.", "error");
+          row.classList.remove("deleting");
+          return;
+        }
+
+        // Write back
+        const newCSV   = rowsToCSV(header, filtered);
+        const b64      = btoa(unescape(encodeURIComponent(newCSV)));
+        await putFile(
+          "meal_log.csv",
+          `log: remove entry ${logId.slice(0, 8)} (${entry?.food_name_snapshot || ""} ${LOADED_DATE})`,
+          b64,
+          FILE_SHA
+        );
+
+        // Update local state
+        ALL_ROWS = filtered;
+        ALL_ROWS._header = header;
+
+        // Animate out then re-render
+        row.style.transition = "opacity 0.2s, max-height 0.3s, padding 0.3s, margin 0.3s";
+        row.style.maxHeight  = row.offsetHeight + "px";
+        row.style.overflow   = "hidden";
+        requestAnimationFrame(() => {
+          row.style.opacity   = "0";
+          row.style.maxHeight = "0";
+          row.style.padding   = "0";
+          row.style.margin    = "0";
+        });
+        setTimeout(() => renderDate(LOADED_DATE), 320);
+
+        toast(`Removed: ${entry?.food_name_snapshot || "entry"}`);
+
+      } catch (err) {
+        row.classList.remove("deleting");
+        toast(`Error: ${err.message}`, "error");
+      }
+    }
+
+    // ── UI helpers ───────────────────────────────────────────────
+    function showState(msg) {
+      document.getElementById("entries-container").innerHTML =
+        `<div class="state-box">${msg}</div>`;
+    }
+
+    function formatDate(str) {
+      if (!str) return "";
+      const [y, m, d] = str.split("-");
+      const date = new Date(+y, +m - 1, +d);
+      return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+    }
+
+    function toast(msg, type = "success") {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.className = `show ${type}`;
+      clearTimeout(el._t);
+      el._t = setTimeout(() => { el.className = ""; }, 3200);
+    }
+
+    function setDefaultDate() {
+      const d   = new Date();
+      const y   = d.getFullYear();
+      const m   = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      document.getElementById("date").value = `${y}-${m}-${day}`;
+    }
+
+    // ── Init ─────────────────────────────────────────────────────
+    setDefaultDate();
+
+    // Load meal log on page open
+    loadMealLog();
+
+    // Re-render when date changes (no reload needed — data already in memory)
+    document.getElementById("date").addEventListener("change", e => {
+      renderDate(e.target.value);
+    });
+  </script>
+
+</body>
+</html>
