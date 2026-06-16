@@ -1,0 +1,45 @@
+name: Sync Food Library to UI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "food_library.csv"
+
+  # Manual trigger in case you want to force a resync
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Sync food library into Food_Log_Entry.html
+        run: |
+          python sync_food_library.py \
+            --food-library food_library.csv \
+            --html         Food_Log_Entry.html
+
+      - name: Commit updated Food_Log_Entry.html
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Food_Log_Entry.html
+          git diff --cached --quiet \
+            && echo "No changes to commit — food list already up to date" \
+            || git commit -m "chore: sync food list in Food_Log_Entry.html [skip ci]"
+
+      - name: Push changes
+        run: git push
