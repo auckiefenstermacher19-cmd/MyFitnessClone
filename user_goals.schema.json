@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "user_goals.schema.json",
+  "title": "User Goals",
+  "description": "Daily nutrition targets per user, versioned by effective date. Each row represents the set of goals that was active for a given user starting on effective_date. To look up the goals that applied on any historical log_date, find the row with the most recent effective_date that is <= log_date. This design replaces the hardcoded goal values embedded in the Excel Dashboard.",
+  "type": "object",
+  "required": [
+    "goal_id",
+    "user_id",
+    "effective_date",
+    "calories",
+    "total_fat",
+    "total_carbs",
+    "protein",
+    "sodium",
+    "potassium",
+    "dietary_fiber",
+    "sugars",
+    "vitamin_a_mcg_rae",
+    "vitamin_c_mg",
+    "vitamin_d_mcg",
+    "calcium_mg",
+    "iron_mg",
+    "calorie_meal_split",
+    "created_at"
+  ],
+  "properties": {
+
+    "goal_id": {
+      "type": "string",
+      "description": "Stable primary key. UUID v4.",
+      "format": "uuid",
+      "examples": ["b1c2d3e4-f5a6-7b8c-9d0e-1f2a3b4c5d6e"]
+    },
+
+    "user_id": {
+      "type": "string",
+      "description": "FK to users table. Use 'default' for single-user deployments. Must match the user_id used in meal_log.",
+      "minLength": 1,
+      "maxLength": 100,
+      "examples": ["default"]
+    },
+
+    "effective_date": {
+      "type": "string",
+      "description": "The date from which this goal set becomes active. ISO 8601 date format YYYY-MM-DD. The active goal for any log_date is the row with the highest effective_date that is <= log_date. The combination of (user_id, effective_date) must be unique.",
+      "format": "date",
+      "examples": ["2026-01-01", "2026-04-01"]
+    },
+
+    "calories": {
+      "type": "number",
+      "description": "Daily calorie target in kcal. Source: Dashboard hardcoded value = 4000.",
+      "exclusiveMinimum": 0,
+      "maximum": 50000,
+      "examples": [4000, 2500]
+    },
+
+    "total_fat": {
+      "type": "number",
+      "description": "Daily total fat target in grams. Source: Dashboard hardcoded value = 200.",
+      "minimum": 0,
+      "maximum": 1000,
+      "examples": [200]
+    },
+
+    "total_carbs": {
+      "type": "number",
+      "description": "Daily total carbohydrate target in grams. Source: Dashboard hardcoded value = 400.",
+      "minimum": 0,
+      "maximum": 2000,
+      "examples": [400]
+    },
+
+    "protein": {
+      "type": "number",
+      "description": "Daily protein target in grams. Source: Dashboard hardcoded value = 250.",
+      "minimum": 0,
+      "maximum": 1000,
+      "examples": [250]
+    },
+
+    "sodium": {
+      "type": "number",
+      "description": "Daily sodium target in milligrams. Source: Dashboard hardcoded value = 4000.",
+      "minimum": 0,
+      "maximum": 100000,
+      "examples": [4000]
+    },
+
+    "potassium": {
+      "type": "number",
+      "description": "Daily potassium target in milligrams. Source: Dashboard hardcoded value = 4700.",
+      "minimum": 0,
+      "maximum": 100000,
+      "examples": [4700]
+    },
+
+    "dietary_fiber": {
+      "type": "number",
+      "description": "Daily dietary fiber target in grams. Source: Dashboard hardcoded value = 45.",
+      "minimum": 0,
+      "maximum": 1000,
+      "examples": [45]
+    },
+
+    "sugars": {
+      "type": "number",
+      "description": "Daily sugars target in grams. Source: Dashboard hardcoded value = 80. Note: this is a ceiling (stay under), not a floor.",
+      "minimum": 0,
+      "maximum": 1000,
+      "examples": [80]
+    },
+
+    "vitamin_a_mcg_rae": {
+      "type": "number",
+      "description": "Daily Vitamin A target in mcg RAE. Canonical unit. Source: Dashboard hardcoded value = 900.",
+      "minimum": 0,
+      "maximum": 100000,
+      "examples": [900]
+    },
+
+    "vitamin_c_mg": {
+      "type": "number",
+      "description": "Daily Vitamin C target in milligrams. Source: Dashboard hardcoded value = 500.",
+      "minimum": 0,
+      "maximum": 10000,
+      "examples": [500]
+    },
+
+    "vitamin_d_mcg": {
+      "type": "number",
+      "description": "Daily Vitamin D target in micrograms (mcg). Canonical unit. Source: Dashboard hardcoded value = 50 mcg (= 2000 IU).",
+      "minimum": 0,
+      "maximum": 10000,
+      "examples": [50]
+    },
+
+    "calcium_mg": {
+      "type": "number",
+      "description": "Daily calcium target in milligrams. Source: Dashboard hardcoded value = 1200.",
+      "minimum": 0,
+      "maximum": 100000,
+      "examples": [1200]
+    },
+
+    "iron_mg": {
+      "type": "number",
+      "description": "Daily iron target in milligrams. Source: Dashboard hardcoded value = 15.",
+      "minimum": 0,
+      "maximum": 1000,
+      "examples": [15]
+    },
+
+    "calorie_meal_split": {
+      "type": "string",
+      "description": "Strategy for distributing the daily calorie goal across meal types. Controls per-meal goal calculations on the dashboard. 'equal_three' replicates the Excel behaviour (calories / 3 distributed equally to Breakfast, Lunch, Dinner; Snack receives no goal). Future values may support custom per-meal targets.",
+      "enum": ["equal_three", "custom"],
+      "examples": ["equal_three"]
+    },
+
+    "notes": {
+      "type": ["string", "null"],
+      "description": "Optional free-text note describing why goals changed (e.g. 'adjusted for cut phase', 'post-bloodwork update'). Audit trail only — not used in calculations.",
+      "maxLength": 1000,
+      "examples": ["Initial goals migrated from Excel workbook", null]
+    },
+
+    "created_at": {
+      "type": "string",
+      "description": "ISO 8601 UTC timestamp of when this goal record was created. Immutable after insert.",
+      "format": "date-time",
+      "examples": ["2026-06-16T03:21:09Z"]
+    }
+
+  },
+
+  "additionalProperties": false
+}

@@ -1,0 +1,301 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "food_library.schema.json",
+  "title": "Food Library",
+  "description": "Master reference table for all tracked foods and supplements. Each row defines one food item's nutritional profile per serving. Per-gram rates are NOT stored here — they are computed at query time as (nutrient / grams_per_serving).",
+  "type": "object",
+  "required": [
+    "food_id",
+    "food_name",
+    "food_category",
+    "grams_per_serving",
+    "serving_unit",
+    "serving_size_label",
+    "calories",
+    "total_fat",
+    "total_carbs",
+    "protein",
+    "saturated_fat",
+    "polyunsaturated_fat",
+    "monounsaturated_fat",
+    "trans_fat",
+    "cholesterol",
+    "sodium",
+    "potassium",
+    "dietary_fiber",
+    "sugars",
+    "vitamin_a_mcg_rae",
+    "vitamin_a_iu",
+    "vitamin_c_mg",
+    "vitamin_d_mcg",
+    "vitamin_d_iu",
+    "calcium_mg",
+    "iron_mg",
+    "vitamin_d_needs_label_verification",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+
+    "food_id": {
+      "type": "string",
+      "description": "Stable primary key. Human-readable kebab-case slug. Must be unique across all rows. Never change after creation — meal_log.csv references this value.",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "minLength": 3,
+      "maxLength": 100,
+      "examples": ["butcherbox-8515-ground-beef", "medium-hass-avocado"]
+    },
+
+    "food_name": {
+      "type": "string",
+      "description": "Display name of the food as it appears on the label or in common usage. No leading/trailing whitespace. No consecutive spaces. Must be unique across all rows.",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^\\S.*\\S$|^\\S$",
+      "examples": ["ButcherBox 85/15 Beef", "Medium Hass Avocado"]
+    },
+
+    "food_category": {
+      "type": "string",
+      "description": "Broad classification of the food item. Used for filtering and display grouping.",
+      "enum": ["whole_food", "supplement", "ingredient", "packaged"],
+      "examples": ["whole_food", "supplement"]
+    },
+
+    "brand": {
+      "type": ["string", "null"],
+      "description": "Brand or manufacturer name. Null for unbranded whole foods (e.g. generic avocado).",
+      "maxLength": 200,
+      "examples": ["ButcherBox", "Vital Farms", null]
+    },
+
+    "grams_per_serving": {
+      "type": "number",
+      "description": "Weight of one serving in grams. This is the denominator for all per-gram rate calculations. Must be > 0.",
+      "exclusiveMinimum": 0,
+      "maximum": 5000,
+      "examples": [112, 28, 0.5]
+    },
+
+    "serving_unit": {
+      "type": "string",
+      "description": "Unit of measure for the serving size. Currently always 'g' (grams). Reserved for future support of volume-based servings.",
+      "enum": ["g", "oz", "ml", "cup", "piece"],
+      "examples": ["g"]
+    },
+
+    "serving_size_label": {
+      "type": "string",
+      "description": "Human-readable serving size as printed on the label (e.g. '1 oz', '2 gummies', '4 oz'). Used for display only — not used in calculations.",
+      "minLength": 1,
+      "maxLength": 100,
+      "examples": ["4 oz", "1 large egg", "2 gummies", "1 medium avocado"]
+    },
+
+    "calories": {
+      "type": "number",
+      "description": "Calories (kcal) per serving.",
+      "minimum": 0,
+      "maximum": 10000,
+      "examples": [240, 70, 15]
+    },
+
+    "total_fat": {
+      "type": "number",
+      "description": "Total fat in grams per serving.",
+      "minimum": 0,
+      "maximum": 1000,
+      "examples": [17, 5, 0]
+    },
+
+    "total_carbs": {
+      "type": "number",
+      "description": "Total carbohydrates in grams per serving.",
+      "minimum": 0,
+      "maximum": 1000,
+      "examples": [0, 26, 31]
+    },
+
+    "protein": {
+      "type": "number",
+      "description": "Protein in grams per serving.",
+      "minimum": 0,
+      "maximum": 1000,
+      "examples": [22, 6, 0]
+    },
+
+    "saturated_fat": {
+      "type": "number",
+      "description": "Saturated fat in grams per serving. Must be <= total_fat.",
+      "minimum": 0,
+      "maximum": 1000,
+      "examples": [7, 5, 0]
+    },
+
+    "polyunsaturated_fat": {
+      "type": "number",
+      "description": "Polyunsaturated fat in grams per serving.",
+      "minimum": 0,
+      "maximum": 1000,
+      "examples": [0.5, 2.7, 0]
+    },
+
+    "monounsaturated_fat": {
+      "type": "number",
+      "description": "Monounsaturated fat in grams per serving.",
+      "minimum": 0,
+      "maximum": 1000,
+      "examples": [7.4, 13.3, 0]
+    },
+
+    "trans_fat": {
+      "type": "number",
+      "description": "Trans fat in grams per serving.",
+      "minimum": 0,
+      "maximum": 100,
+      "examples": [1, 0]
+    },
+
+    "cholesterol": {
+      "type": "number",
+      "description": "Cholesterol in milligrams per serving.",
+      "minimum": 0,
+      "maximum": 10000,
+      "examples": [70, 185, 30]
+    },
+
+    "sodium": {
+      "type": "number",
+      "description": "Sodium in milligrams per serving.",
+      "minimum": 0,
+      "maximum": 100000,
+      "examples": [55, 180, 0]
+    },
+
+    "potassium": {
+      "type": "number",
+      "description": "Potassium in milligrams per serving.",
+      "minimum": 0,
+      "maximum": 100000,
+      "examples": [330, 660, 250]
+    },
+
+    "dietary_fiber": {
+      "type": "number",
+      "description": "Dietary fiber in grams per serving. Must be <= total_carbs.",
+      "minimum": 0,
+      "maximum": 1000,
+      "examples": [0, 9, 3]
+    },
+
+    "sugars": {
+      "type": "number",
+      "description": "Total sugars in grams per serving. Must be <= total_carbs.",
+      "minimum": 0,
+      "maximum": 1000,
+      "examples": [0, 5, 1]
+    },
+
+    "vitamin_a_mcg_rae": {
+      "type": "number",
+      "description": "Vitamin A in micrograms of Retinol Activity Equivalents (mcg RAE) per serving. This is the canonical reporting unit matching the dashboard goal (900 mcg RAE). Conversion: 1 mcg RAE = 3.333 IU.",
+      "minimum": 0,
+      "maximum": 100000,
+      "examples": [920, 84, 0]
+    },
+
+    "vitamin_a_iu": {
+      "type": "number",
+      "description": "Vitamin A in International Units (IU) per serving. Derived from vitamin_a_mcg_rae * 3.333. Stored for label reference and backwards compatibility. Do not use for goal comparison — use vitamin_a_mcg_rae.",
+      "minimum": 0,
+      "maximum": 500000,
+      "examples": [3067, 280, 0]
+    },
+
+    "vitamin_c_mg": {
+      "type": "number",
+      "description": "Vitamin C in milligrams per serving. Canonical unit matching dashboard goal (500 mg).",
+      "minimum": 0,
+      "maximum": 10000,
+      "examples": [3, 12, 500]
+    },
+
+    "vitamin_d_mcg": {
+      "type": "number",
+      "description": "Vitamin D in micrograms (mcg) per serving. Canonical reporting unit matching dashboard goal (50 mcg). Conversion: 1 mcg = 40 IU.",
+      "minimum": 0,
+      "maximum": 10000,
+      "examples": [50, 1, 0.1]
+    },
+
+    "vitamin_d_iu": {
+      "type": "number",
+      "description": "Vitamin D in International Units (IU) per serving. Derived from vitamin_d_mcg * 40. Stored for label reference. Do not use for goal comparison — use vitamin_d_mcg.",
+      "minimum": 0,
+      "maximum": 500000,
+      "examples": [2000, 40, 4]
+    },
+
+    "calcium_mg": {
+      "type": "number",
+      "description": "Calcium in milligrams per serving. Canonical unit matching dashboard goal (1200 mg).",
+      "minimum": 0,
+      "maximum": 10000,
+      "examples": [200, 30, 0]
+    },
+
+    "iron_mg": {
+      "type": "number",
+      "description": "Iron in milligrams per serving. Canonical unit matching dashboard goal (15 mg).",
+      "minimum": 0,
+      "maximum": 1000,
+      "examples": [1.8, 0.9, 0]
+    },
+
+    "vitamin_d_needs_label_verification": {
+      "type": "boolean",
+      "description": "Flag indicating that the vitamin_d_mcg and vitamin_d_iu values have not been confirmed against the physical product label. True for foods where 0.1 mcg was carried from the workbook without label confirmation. Set to false once verified.",
+      "examples": [true, false]
+    },
+
+    "source_url": {
+      "type": ["string", "null"],
+      "description": "URL to the product nutrition page (brand website, USDA FoodData Central, or retailer). Used for auditing and future data enrichment. Null if not yet sourced.",
+      "format": "uri",
+      "maxLength": 2048,
+      "examples": [
+        "https://www.naturemade.com/products/nature-made-vitamin-d3-gummies",
+        null
+      ]
+    },
+
+    "created_at": {
+      "type": "string",
+      "description": "ISO 8601 UTC timestamp of when this food record was first created.",
+      "format": "date-time",
+      "examples": ["2026-06-16T03:21:09Z"]
+    },
+
+    "updated_at": {
+      "type": "string",
+      "description": "ISO 8601 UTC timestamp of the most recent update to this record. Must be >= created_at.",
+      "format": "date-time",
+      "examples": ["2026-06-16T03:21:09Z"]
+    }
+
+  },
+
+  "additionalProperties": false,
+
+  "allOf": [
+    {
+      "description": "Fat components must not exceed total fat",
+      "if": { "properties": { "total_fat": { "exclusiveMinimum": 0 } }, "required": ["total_fat"] },
+      "then": {
+        "properties": {
+          "saturated_fat": { "maximum": { "$data": "1/total_fat" } }
+        }
+      }
+    }
+  ]
+}

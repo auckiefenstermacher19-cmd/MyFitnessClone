@@ -1,0 +1,35 @@
+log_id,user_id,log_date,meal_type,food_id,food_name_snapshot,grams,created_at
+e48282c4-2140-48cd-8fd6-407c60b3bc87,default,2026-04-29,Dinner,organic-valley-grassmilk-cheddar,Organic Valley Grassmilk Cheddar,45,2026-06-16T03:21:09Z
+19296b1c-afc6-4640-a79c-50678e83d8fe,default,2026-04-29,Dinner,medium-hass-avocado,Medium Hass Avocado,56,2026-06-16T03:21:09Z
+e6f56176-cdaa-45a9-b79b-116c48f2ce7b,default,2026-04-29,Dinner,365-white-quinoa,365 White Quinoa,165,2026-06-16T03:21:09Z
+da178909-9a49-4dc4-ac57-a0181dffeb35,default,2026-04-29,Dinner,vital-farms-large-eggs,Vital Farms Large Eggs,290,2026-06-16T03:21:09Z
+2ca28269-0edc-415a-bbc1-9543b546e390,default,2026-04-29,Dinner,wfm-organic-sweet-potato,WFM Organic Sweet Potato,195,2026-06-16T03:21:09Z
+539792ba-0b05-48fd-92fc-9bd1da27163a,default,2026-04-29,Dinner,butcherbox-grass-fed-ribeye,ButcherBox Grass-Fed Ribeye,285,2026-06-16T03:21:09Z
+dacc6d9f-cded-41c8-816b-1fb893cbe8a5,default,2026-04-29,Snack,nature-made-d3-gummies,Nature Made D3 Gummies,5,2026-06-16T03:21:09Z
+58246fdc-33a9-4ecf-bce0-c1bd4be63b1b,default,2026-04-29,Snack,garden-of-life-vitamin-c,Garden of Life Vitamin C,1,2026-06-16T03:21:09Z
+d0ac0c03-5e2b-463b-87de-ca5cf08d253f,default,2026-04-17,Snack,nature-made-d3-gummies,Nature Made D3 Gummies,10,2026-06-16T03:21:09Z
+b918b889-6343-49e9-bc2e-4aefe19a80cf,default,2026-04-17,Dinner,organic-valley-grassmilk-cheddar,Organic Valley Grassmilk Cheddar,50,2026-06-16T03:21:09Z
+5db298b0-7126-400d-90d6-c7bf75eab62f,default,2026-04-17,Dinner,medium-hass-avocado,Medium Hass Avocado,50,2026-06-16T03:21:09Z
+c9debbdf-029e-4b13-987c-94f29bf2dd94,default,2026-04-17,Dinner,365-white-quinoa,365 White Quinoa,167,2026-06-16T03:21:09Z
+1ae65d1b-3805-41f5-b441-2dc755cad028,default,2026-04-17,Dinner,wfm-organic-sweet-potato,WFM Organic Sweet Potato,200,2026-06-16T03:21:09Z
+98a03931-2b41-4eeb-a57e-4d6e612be7ab,default,2026-04-17,Dinner,butcherbox-chuck-roast,ButcherBox Chuck Roast,350,2026-06-16T03:21:09Z
+f5a88592-db17-4f9a-aed2-ece17c45cecf,default,2026-04-17,Breakfast,organic-valley-grassmilk-cheddar,Organic Valley Grassmilk Cheddar,35,2026-06-16T03:21:09Z
+056d51de-365a-42fb-88c6-e24cd8b9c9f9,default,2026-04-17,Breakfast,medium-hass-avocado,Medium Hass Avocado,77,2026-06-16T03:21:09Z
+698f30b8-6d0f-4300-950b-69c0c7f52e7d,default,2026-04-17,Breakfast,365-white-quinoa,365 White Quinoa,150,2026-06-16T03:21:09Z
+70f7b83a-ed04-4674-8b6c-cf21c8f975eb,default,2026-04-17,Breakfast,vital-farms-large-eggs,Vital Farms Large Eggs,305,2026-06-16T03:21:09Z
+446fcad7-8dca-4295-a797-9004bcb4ae39,default,2026-04-17,Breakfast,butcherbox-8515-ground-beef,ButcherBox 85/15 Beef,165,2026-06-16T03:21:09Z
+4107d55a-df07-4b2e-a01c-0997f2af91fc,default,2026-04-16,Lunch,butcherbox-grass-fed-ribeye,ButcherBox Grass-Fed Ribeye,100,2026-06-16T03:21:09Z
+59170b71-e762-4079-aac4-5f34551940b4,default,2026-04-16,Lunch,butcherbox-8515-ground-beef,ButcherBox 85/15 Beef,100,2026-06-16T03:21:09Z
+83be78c3-e9a3-4b2b-9653-bd7827cf522a,default,2026-04-16,Lunch,butcherbox-8515-ground-beef,ButcherBox 85/15 Beef,350,2026-06-16T03:21:09Z
+804d994f-afe6-4230-aff0-1d745366c4c7,default,2026-04-16,Lunch,365-white-quinoa,365 White Quinoa,160,2026-06-16T03:21:09Z
+3d97396a-cbe1-4fa4-87e3-99f74ccc82d5,default,2026-04-16,Lunch,medium-hass-avocado,Medium Hass Avocado,60,2026-06-16T03:21:09Z
+f4a2fffb-b11a-42b4-b1de-1bc7b7dbd833,default,2026-04-16,Lunch,organic-valley-grassmilk-cheddar,Organic Valley Grassmilk Cheddar,40,2026-06-16T03:21:09Z
+0f010e6f-51cc-4ff5-b3be-45f81ef2358e,default,2026-04-29,Lunch,medium-hass-avocado,Medium Hass Avocado,50,2026-06-16T03:21:09Z
+99b6f563-eb1e-4cdd-8d4a-7776350628fe,default,2026-04-29,Lunch,organic-valley-grassmilk-cheddar,Organic Valley Grassmilk Cheddar,45,2026-06-16T03:21:09Z
+b39c8342-2624-421c-9bc9-a7ed23d7120a,default,2026-04-29,Lunch,365-white-quinoa,365 White Quinoa,155,2026-06-16T03:21:09Z
+8fc7c80d-bd33-407d-b514-b4c9a076e71d,default,2026-04-29,Lunch,wfm-organic-sweet-potato,WFM Organic Sweet Potato,220,2026-06-16T03:21:09Z
+b35e6619-1342-431a-aa6d-b945d6dd48e9,default,2026-04-29,Lunch,butcherbox-8515-ground-beef,ButcherBox 85/15 Beef,375,2026-06-16T03:21:09Z
+b38d42c1-54dd-428d-9624-35e8fe713077,default,2026-04-29,Breakfast,organic-valley-grassmilk-cheddar,Organic Valley Grassmilk Cheddar,35,2026-06-16T03:21:09Z
+bd387f70-57af-4e63-a77f-ad30c682edc8,default,2026-04-29,Breakfast,vital-farms-large-eggs,Vital Farms Large Eggs,285,2026-06-16T03:21:09Z
+2028e8a5-e81d-4353-96c2-0d773cd1134a,default,2026-04-29,Breakfast,medium-hass-avocado,Medium Hass Avocado,101,2026-06-16T03:21:09Z
+747c08b0-3d87-4b64-bb04-a464f533d8c3,default,2026-04-29,Breakfast,365-white-quinoa,365 White Quinoa,155,2026-06-16T03:21:09Z

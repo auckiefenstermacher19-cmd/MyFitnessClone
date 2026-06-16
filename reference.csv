@@ -1,0 +1,23 @@
+nutrient_key,display_name,category,unit,unit_label,is_canonical_unit,canonical_nutrient_key,display_order,notes
+food_name,Food,identity,text,,True,,10,Display name of the food item
+grams_per_serving,Serving Size,identity,g,g,True,,20,Weight of one serving in grams; denominator for all per-gram calculations
+calories,Calories,macro,kcal,kcal,True,,100,Energy in kilocalories
+total_fat,Total Fat,macro,g,g,True,,110,
+total_carbs,Total Carbohydrates,macro,g,g,True,,120,
+protein,Protein,macro,g,g,True,,130,
+saturated_fat,Saturated Fat,fat_detail,g,g,True,,200,Subset of total_fat
+polyunsaturated_fat,Polyunsaturated Fat,fat_detail,g,g,True,,210,Subset of total_fat
+monounsaturated_fat,Monounsaturated Fat,fat_detail,g,g,True,,220,Subset of total_fat
+trans_fat,Trans Fat,fat_detail,g,g,True,,230,Goal is 0g (minimize); not tracked in user_goals
+cholesterol,Cholesterol,other_macro,mg,mg,True,,300,Not tracked in user_goals in current version
+sodium,Sodium,other_macro,mg,mg,True,,310,Goal is a ceiling (stay under)
+potassium,Potassium,other_macro,mg,mg,True,,320,
+dietary_fiber,Dietary Fiber,other_macro,g,g,True,,330,Subset of total_carbs
+sugars,Sugars,other_macro,g,g,True,,340,Subset of total_carbs. Goal is a ceiling (stay under)
+vitamin_a_mcg_rae,Vitamin A,micro,mcg_rae,mcg RAE,True,,400,Canonical unit per updated FDA labeling rules (post-2020). Goal = 900 mcg RAE. Conversion: 1 mcg RAE = 3.333 IU
+vitamin_a_iu,Vitamin A (IU),micro,IU,IU,False,vitamin_a_mcg_rae,401,Alternative unit for label reference only. Do not use for goal comparison. Derived: vitamin_a_mcg_rae * 3.333
+vitamin_c_mg,Vitamin C,micro,mg,mg,True,,410,Goal = 500 mg
+vitamin_d_mcg,Vitamin D,micro,mcg,mcg,True,,420,Canonical unit. Goal = 50 mcg (= 2000 IU). Conversion: 1 mcg = 40 IU
+vitamin_d_iu,Vitamin D (IU),micro,IU,IU,False,vitamin_d_mcg,421,Alternative unit for label reference only. Do not use for goal comparison. Derived: vitamin_d_mcg * 40
+calcium_mg,Calcium,micro,mg,mg,True,,430,Goal = 1200 mg
+iron_mg,Iron,micro,mg,mg,True,,440,Goal = 15 mg

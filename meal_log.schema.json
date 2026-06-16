@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "meal_log.schema.json",
+  "title": "Meal Log",
+  "description": "Append-only record of every food item consumed per meal per day. Each row = one food item in one meal on one date. Nutrition values consumed are NOT stored here — they are computed at query time by joining to food_library and applying: nutrient_consumed = grams * (nutrient_per_serving / grams_per_serving).",
+  "type": "object",
+  "required": [
+    "log_id",
+    "user_id",
+    "log_date",
+    "meal_type",
+    "food_id",
+    "food_name_snapshot",
+    "grams",
+    "created_at"
+  ],
+  "properties": {
+
+    "log_id": {
+      "type": "string",
+      "description": "Stable primary key for this log entry. UUID v4. Never reused or reassigned.",
+      "format": "uuid",
+      "examples": ["a3f2c1d0-4e5b-4f6a-8c9d-1b2e3f4a5b6c"]
+    },
+
+    "user_id": {
+      "type": "string",
+      "description": "Identifier of the user who logged this entry. Use 'default' for single-user deployments. FK to users table (future). Required now to support multi-user without a schema migration later.",
+      "minLength": 1,
+      "maxLength": 100,
+      "examples": ["default", "user-abc123"]
+    },
+
+    "log_date": {
+      "type": "string",
+      "description": "Date the food was consumed. ISO 8601 date format YYYY-MM-DD. Not a datetime — meal times are not tracked at this time.",
+      "format": "date",
+      "examples": ["2026-04-16", "2026-04-29"]
+    },
+
+    "meal_type": {
+      "type": "string",
+      "description": "Meal category. Matches the four categories defined in the original workbook. Breakfast/Lunch/Dinner are included in calorie goal splits. Snack is tracked but excluded from the per-meal goal calculation.",
+      "enum": ["Breakfast", "Lunch", "Dinner", "Snack"],
+      "examples": ["Breakfast", "Dinner"]
+    },
+
+    "food_id": {
+      "type": "string",
+      "description": "Foreign key referencing food_library.food_id. Must match an existing food_id at the time of logging. Immutable after insert.",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "minLength": 3,
+      "maxLength": 100,
+      "examples": ["butcherbox-8515-ground-beef", "medium-hass-avocado"]
+    },
+
+    "food_name_snapshot": {
+      "type": "string",
+      "description": "Denormalized copy of food_library.food_name at the time of logging. Preserved so historical log entries remain readable even if the food_library record is renamed or deleted. Do not update this field after insert.",
+      "minLength": 1,
+      "maxLength": 200,
+      "examples": ["ButcherBox 85/15 Beef", "Medium Hass Avocado"]
+    },
+
+    "grams": {
+      "type": "number",
+      "description": "Weight in grams of the food item consumed in this log entry. This is the only user-entered numeric value. All nutrition totals are derived from this value at query time.",
+      "exclusiveMinimum": 0,
+      "maximum": 5000,
+      "examples": [285, 100, 350, 45]
+    },
+
+    "created_at": {
+      "type": "string",
+      "description": "ISO 8601 UTC timestamp of when this log entry was created. Immutable after insert. Used for audit trail and future intra-day ordering if meal times are added.",
+      "format": "date-time",
+      "examples": ["2026-04-29T12:34:56Z"]
+    }
+
+  },
+
+  "additionalProperties": false
+}

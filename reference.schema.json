@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "reference.schema.json",
+  "title": "Reference",
+  "description": "Static metadata table defining every tracked nutrient: its canonical name, field key, category, unit of measure, and display order. Used by the application layer for rendering labels, tooltips, and unit annotations. Not used in nutrition calculations. Replaces the three sub-tables on the Excel Reference sheet and resolves the sync issue where goal values existed in both Reference and the Dashboard.",
+  "type": "object",
+  "required": [
+    "nutrient_key",
+    "display_name",
+    "category",
+    "unit",
+    "unit_label",
+    "is_canonical_unit",
+    "display_order"
+  ],
+  "properties": {
+
+    "nutrient_key": {
+      "type": "string",
+      "description": "Machine-readable primary key. Matches the exact column name used in food_library.csv and the field names used in user_goals.csv. Snake_case. Unique across all rows.",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "minLength": 2,
+      "maxLength": 60,
+      "examples": [
+        "calories",
+        "protein",
+        "vitamin_a_mcg_rae",
+        "vitamin_d_mcg"
+      ]
+    },
+
+    "display_name": {
+      "type": "string",
+      "description": "Human-readable label for UI rendering (chart axes, dashboard headers, tooltips).",
+      "minLength": 1,
+      "maxLength": 100,
+      "examples": [
+        "Calories",
+        "Protein",
+        "Vitamin A",
+        "Vitamin D"
+      ]
+    },
+
+    "category": {
+      "type": "string",
+      "description": "Nutrient grouping for dashboard section assignment and display ordering.",
+      "enum": [
+        "identity",
+        "macro",
+        "fat_detail",
+        "other_macro",
+        "micro"
+      ],
+      "examples": ["macro", "micro", "fat_detail"]
+    },
+
+    "unit": {
+      "type": "string",
+      "description": "Abbreviated unit of measure used in calculations and axis labels.",
+      "enum": [
+        "kcal",
+        "g",
+        "mg",
+        "mcg_rae",
+        "mcg",
+        "IU",
+        "text"
+      ],
+      "examples": ["kcal", "g", "mg", "mcg_rae"]
+    },
+
+    "unit_label": {
+      "type": "string",
+      "description": "Full human-readable unit string for display in UI tooltips and data dictionaries.",
+      "minLength": 1,
+      "maxLength": 50,
+      "examples": [
+        "kcal",
+        "g",
+        "mg",
+        "mcg RAE",
+        "mcg",
+        "IU"
+      ]
+    },
+
+    "is_canonical_unit": {
+      "type": "boolean",
+      "description": "True if this row represents the canonical reporting unit for this nutrient — the unit used in user_goals and in all dashboard comparisons. False for alternative unit rows (e.g. vitamin_a_iu, vitamin_d_iu). Only one row per logical nutrient should have is_canonical_unit = true.",
+      "examples": [true, false]
+    },
+
+    "canonical_nutrient_key": {
+      "type": ["string", "null"],
+      "description": "For non-canonical unit rows (is_canonical_unit = false), the nutrient_key of the corresponding canonical row. Null for canonical rows. Enables the application to find the correct goal value when displaying an IU field.",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "maxLength": 60,
+      "examples": ["vitamin_a_mcg_rae", "vitamin_d_mcg", null]
+    },
+
+    "display_order": {
+      "type": "integer",
+      "description": "Integer sort order for rendering nutrients in a consistent sequence across all dashboard sections and tables. Lower values appear first. Gaps between values are intentional to allow future insertions without renumbering.",
+      "minimum": 1,
+      "maximum": 9999,
+      "examples": [10, 20, 100, 210]
+    },
+
+    "notes": {
+      "type": ["string", "null"],
+      "description": "Optional clarification note for data engineers or maintainers. Not displayed in UI.",
+      "maxLength": 500,
+      "examples": [
+        "Goal is a ceiling (stay under), not a floor",
+        "Vitamin A canonical unit is mcg RAE per updated FDA labeling rules (post-2020)",
+        null
+      ]
+    }
+
+  },
+
+  "additionalProperties": false
+}

@@ -1,0 +1,2 @@
+goal_id,user_id,effective_date,calories,total_fat,total_carbs,protein,sodium,potassium,dietary_fiber,sugars,vitamin_a_mcg_rae,vitamin_c_mg,vitamin_d_mcg,calcium_mg,iron_mg,calorie_meal_split,notes,created_at
+8345656d-2c1b-4d7d-9e1a-f0758813ec42,default,2026-04-16,4000,200,400,250,4000,4700,45,80,900,500,50,1200,15,equal_three,Initial goals migrated from Excel Dashboard hardcoded values,2026-06-16T03:21:09Z
