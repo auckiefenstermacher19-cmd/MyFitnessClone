@@ -296,6 +296,24 @@
       transition: background 0.15s;
     }
     .save-btn:hover { background: var(--accent-dim); }
+
+    #edit-link {
+      display: block;
+      width: 100%;
+      max-width: 420px;
+      margin-top: 12px;
+      padding: 13px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      text-decoration: none;
+      background: var(--surface);
+      transition: color 0.15s, border-color 0.15s;
+    }
+    #edit-link:hover { color: var(--text); border-color: var(--muted); }
   </style>
 </head>
 <body>
@@ -394,6 +412,9 @@
       <button class="save-btn" onclick="saveSettings()">Save Settings</button>
     </div>
   </details>
+
+  <!-- Edit link -->
+  <a href="Meal_Log_Editor.html" id="edit-link">Edit Meal Log</a>
 
   <div id="toast"></div>
 
