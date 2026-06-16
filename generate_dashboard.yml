@@ -1,0 +1,124 @@
+name: Generate Dashboard
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "data/source/meal_log.csv"
+      - "data/source/user_goals.csv"
+
+  # Manual trigger — available in the Actions tab at any time
+  workflow_dispatch:
+    inputs:
+      recompute_from:
+        description: >
+          Optional: YYYY-MM-DD. Recompute all dashboard rows on or after
+          this date. Use after editing user_goals.csv to apply new goals
+          to historical dates. Leave blank for a normal incremental run.
+        required: false
+        default: ""
+
+jobs:
+  generate-dashboard:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write   # needed to commit the updated dashboard CSV back
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Fetch full history so git log can detect which file changed
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Detect whether user_goals.csv changed in this push.
+      # If it did, find the earliest new effective_date added so we know
+      # how far back to recompute.
+      - name: Detect changed files
+        id: changed
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          echo "Changed files: $CHANGED"
+
+          if echo "$CHANGED" | grep -q "data/source/user_goals.csv"; then
+            echo "goals_changed=true" >> $GITHUB_OUTPUT
+
+            # Pull the new effective_date(s) from the goals file.
+            # The earliest new date in the file that did not exist in the
+            # previous commit determines how far back we recompute.
+            PREV_DATES=$(git show HEAD~1:data/source/user_goals.csv \
+              | tail -n +2 | cut -d',' -f3 | sort)
+            ALL_DATES=$(tail -n +2 data/source/user_goals.csv \
+              | cut -d',' -f3 | sort)
+            NEW_DATE=$(comm -13 <(echo "$PREV_DATES") <(echo "$ALL_DATES") \
+              | head -1)
+
+            if [ -n "$NEW_DATE" ]; then
+              echo "recompute_from=$NEW_DATE" >> $GITHUB_OUTPUT
+              echo "New goal effective_date detected: $NEW_DATE"
+            else
+              echo "recompute_from=" >> $GITHUB_OUTPUT
+              echo "No new effective_date found — running normal incremental"
+            fi
+          else
+            echo "goals_changed=false" >> $GITHUB_OUTPUT
+            echo "recompute_from=" >> $GITHUB_OUTPUT
+          fi
+
+      # Resolve --recompute-from: manual input takes precedence over auto-detected
+      - name: Resolve recompute flag
+        id: recompute
+        run: |
+          MANUAL="${{ github.event.inputs.recompute_from }}"
+          AUTO="${{ steps.changed.outputs.recompute_from }}"
+
+          if [ -n "$MANUAL" ]; then
+            echo "date=$MANUAL" >> $GITHUB_OUTPUT
+            echo "Using manual recompute-from: $MANUAL"
+          elif [ -n "$AUTO" ]; then
+            echo "date=$AUTO" >> $GITHUB_OUTPUT
+            echo "Using auto-detected recompute-from: $AUTO"
+          else
+            echo "date=" >> $GITHUB_OUTPUT
+            echo "No recompute-from — incremental run"
+          fi
+
+      # Run the script. Append --recompute-from only when a date is set.
+      - name: Run generate_dashboard.py
+        run: |
+          RECOMPUTE="${{ steps.recompute.outputs.date }}"
+          if [ -n "$RECOMPUTE" ]; then
+            python scripts/generate_dashboard.py \
+              --meal-log     data/source/meal_log.csv \
+              --food-library data/source/food_library.csv \
+              --user-goals   data/source/user_goals.csv \
+              --dashboard    data/source/Meal_Data_Dashboard.csv \
+              --recompute-from "$RECOMPUTE"
+          else
+            python scripts/generate_dashboard.py \
+              --meal-log     data/source/meal_log.csv \
+              --food-library data/source/food_library.csv \
+              --user-goals   data/source/user_goals.csv \
+              --dashboard    data/source/Meal_Data_Dashboard.csv
+          fi
+
+      # Commit the updated dashboard back to main if it changed.
+      # [skip ci] prevents this commit from re-triggering the workflow.
+      - name: Commit updated dashboard
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/source/Meal_Data_Dashboard.csv
+          git diff --cached --quiet \
+            && echo "No changes to commit — dashboard already up to date" \
+            || git commit -m "chore: update Meal_Data_Dashboard [skip ci]"
+
+      - name: Push changes
+        run: git push
