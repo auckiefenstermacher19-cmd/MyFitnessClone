@@ -2,7 +2,8 @@
 sync_food_library.py
 --------------------
 Reads food_library.csv and updates the FOODS array inside Food_Log_Entry.html
-so the food entry UI always reflects the current food library.
+so the food entry UI always reflects the current food library — including the
+default serving size (grams_per_serving) and serving label for the grams pre-fill.
 
 Run automatically by GitHub Actions whenever food_library.csv changes.
 Can also be run locally after adding a new food to food_library.csv.
@@ -12,8 +13,8 @@ Usage
     python sync_food_library.py
 
     # override paths if needed
-    python sync_food_library.py \\
-        --food-library food_library.csv \\
+    python sync_food_library.py \
+        --food-library food_library.csv \
         --html         Food_Log_Entry.html
 
 How it works
@@ -27,6 +28,12 @@ The script looks for two sentinel comments inside Food_Log_Entry.html:
 Everything between (and including) those two lines is replaced with a freshly
 generated FOODS array built from food_library.csv. The rest of the HTML file
 is untouched.
+
+Each entry in the FOODS array includes:
+  - name:    food_name from food_library.csv
+  - id:      food_id from food_library.csv
+  - grams:   grams_per_serving from food_library.csv (used to pre-fill the grams field)
+  - serving: serving_size_label from food_library.csv (shown as hint text)
 """
 
 import argparse
@@ -42,30 +49,45 @@ SENTINEL_END     = "// @@FOODS_END@@"
 
 
 def load_foods(path):
-    """Return list of (food_name, food_id) from food_library.csv, in file order."""
+    """
+    Return list of dicts with name, id, grams, serving from food_library.csv.
+    Preserves file order.
+    """
     foods = []
     with open(path, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
-            foods.append((row["food_name"], row["food_id"]))
+            foods.append({
+                "name":    row["food_name"].strip(),
+                "id":      row["food_id"].strip(),
+                "grams":   float(row["grams_per_serving"]),
+                "serving": row["serving_size_label"].strip(),
+            })
     return foods
 
 
 def build_foods_block(foods):
     """
     Build the replacement block — sentinel open, FOODS array, sentinel close.
-    Aligns the id: values for readability.
+    Each entry includes name, id, grams, and serving for the pre-fill feature.
     """
     if not foods:
         raise ValueError("food_library.csv contains no food rows")
 
-    max_name_len = max(len(name) for name, _ in foods)
+    max_name_len = max(len(f["name"]) for f in foods)
 
     lines = []
     lines.append("    // @@FOODS_START@@")
     lines.append("    const FOODS = [")
-    for name, fid in foods:
-        padding = " " * (max_name_len - len(name) + 2)
-        lines.append(f'      {{ name: "{name}",{padding}id: "{fid}" }},')
+    for f in foods:
+        name_padding = " " * (max_name_len - len(f["name"]) + 2)
+        # Format grams — use int if it's a whole number, else 1 decimal place
+        grams_val = int(f["grams"]) if f["grams"] == int(f["grams"]) else round(f["grams"], 1)
+        lines.append(
+            f'      {{ name: "{f["name"]}",{name_padding}'
+            f'id: "{f["id"]}",  '
+            f'grams: {grams_val},  '
+            f'serving: "{f["serving"]}" }},'
+        )
     lines.append("    ];")
     lines.append("    // @@FOODS_END@@")
 
@@ -93,10 +115,9 @@ def update_html(html_path, foods_block):
             f"Sentinel '{SENTINEL_END}' not found in {html_path}."
         )
 
-    # Locate the full block (from start sentinel line to end sentinel line inclusive)
-    lines        = content.split("\n")
-    start_idx    = next(i for i, l in enumerate(lines) if SENTINEL_START in l)
-    end_idx      = next(i for i, l in enumerate(lines) if SENTINEL_END in l)
+    lines     = content.split("\n")
+    start_idx = next(i for i, l in enumerate(lines) if SENTINEL_START in l)
+    end_idx   = next(i for i, l in enumerate(lines) if SENTINEL_END   in l)
 
     if end_idx <= start_idx:
         raise ValueError(
@@ -127,7 +148,6 @@ def parse_args():
 def main():
     args = parse_args()
 
-    # Validate inputs
     for label, path in [("food_library", args.food_library), ("html", args.html)]:
         if not os.path.exists(path):
             print(f"ERROR: {label} not found at '{path}'")
@@ -136,8 +156,8 @@ def main():
     print(f"Reading food library : {args.food_library}")
     foods = load_foods(args.food_library)
     print(f"  {len(foods)} food(s) found:")
-    for name, fid in foods:
-        print(f"    {name!r:45s} → {fid!r}")
+    for f in foods:
+        print(f"    {f['name']!r:45s} → {f['id']!r}  ({f['grams']}g / {f['serving']})")
 
     print(f"\nBuilding FOODS array...")
     foods_block = build_foods_block(foods)
@@ -157,7 +177,7 @@ def main():
         f.write(new_content)
 
     print(f"Updated: {args.html}")
-    print(f"FOODS array now contains {len(foods)} food(s)")
+    print(f"FOODS array now contains {len(foods)} food(s) with serving sizes")
 
 
 if __name__ == "__main__":
