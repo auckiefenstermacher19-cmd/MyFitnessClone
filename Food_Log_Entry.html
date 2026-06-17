@@ -93,7 +93,6 @@
     }
 
     input:focus, select:focus { border-color: var(--accent); }
-
     input[type="date"] { min-height: 48px; }
 
     /* Custom select arrow */
@@ -113,27 +112,21 @@
 
     /* ── Typeahead food field ─────────────────────────────────── */
     .typeahead-wrap { position: relative; }
+    .typeahead-wrap input { padding-right: 36px; }
 
-    .typeahead-wrap input {
-      padding-right: 36px;
-    }
-
-    /* clear button */
     .typeahead-clear {
       position: absolute;
-      right: 12px;
-      top: 50%;
+      right: 10px; top: 50%;
       transform: translateY(-50%);
-      background: none;
-      border: none;
-      color: var(--muted);
-      font-size: 18px;
-      line-height: 1;
-      cursor: pointer;
-      padding: 2px 4px;
-      display: none;
+      background: none; border: none;
+      color: var(--muted); font-size: 18px;
+      line-height: 1; cursor: pointer;
+      padding: 8px; display: none;
+      /* Larger tap target on mobile */
+      min-width: 36px; min-height: 36px;
+      display: none; align-items: center; justify-content: center;
     }
-    .typeahead-clear.visible { display: block; }
+    .typeahead-clear.visible { display: flex; }
 
     .typeahead-list {
       position: absolute;
@@ -151,16 +144,31 @@
 
     .typeahead-item {
       padding: 12px 14px;
-      font-size: 15px;
       cursor: pointer;
       border-bottom: 1px solid var(--border);
       transition: background 0.1s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
     }
     .typeahead-item:last-child { border-bottom: none; }
     .typeahead-item:hover,
     .typeahead-item.active {
       background: var(--accent-dim);
       color: var(--accent);
+    }
+    .typeahead-item-name { font-size: 15px; }
+    .typeahead-item-serving {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .typeahead-item:hover .typeahead-item-serving,
+    .typeahead-item.active .typeahead-item-serving {
+      color: var(--accent);
+      opacity: 0.7;
     }
 
     /* highlight matched chars */
@@ -176,18 +184,34 @@
       color: var(--muted);
     }
 
-    /* Grams */
+    /* ── Grams field with default serving hint ───────────────── */
     .grams-row { position: relative; }
     .grams-row input { padding-right: 40px; }
     .unit-badge {
       position: absolute;
-      right: 14px;
-      top: 50%;
+      right: 14px; top: 50%;
       transform: translateY(-50%);
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 13px; font-weight: 600;
       color: var(--muted);
       pointer-events: none;
+    }
+
+    /* Serving hint shown below grams when a food is selected */
+    .serving-hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+      min-height: 18px;
+      transition: opacity 0.2s;
+    }
+    .serving-hint.visible { opacity: 1; }
+    .serving-hint:not(.visible) { opacity: 0; }
+    .serving-hint strong { color: var(--accent); }
+
+    /* Grams input when pre-filled with default */
+    #grams.prefilled {
+      border-color: var(--border);
+      color: var(--muted);
     }
 
     button[type="submit"] {
@@ -210,20 +234,16 @@
     /* Toast */
     #toast {
       position: fixed;
-      bottom: 32px;
-      left: 50%;
+      bottom: 32px; left: 50%;
       transform: translateX(-50%) translateY(80px);
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 24px;
       padding: 12px 20px;
-      font-size: 14px;
-      font-weight: 500;
+      font-size: 14px; font-weight: 500;
       white-space: nowrap;
       transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s;
-      opacity: 0;
-      pointer-events: none;
-      z-index: 100;
+      opacity: 0; pointer-events: none; z-index: 100;
     }
     #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
     #toast.success { border-color: var(--accent); color: var(--accent); }
@@ -231,31 +251,20 @@
 
     /* Settings */
     details {
-      width: 100%;
-      max-width: 420px;
-      margin-top: 16px;
+      width: 100%; max-width: 420px; margin-top: 16px;
     }
-
     summary {
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.6px;
-      text-transform: uppercase;
-      color: var(--muted);
-      cursor: pointer;
+      font-size: 12px; font-weight: 600;
+      letter-spacing: 0.6px; text-transform: uppercase;
+      color: var(--muted); cursor: pointer;
       list-style: none;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 0;
-      user-select: none;
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 0; user-select: none;
     }
     summary::-webkit-details-marker { display: none; }
     summary::before {
-      content: "›";
-      font-size: 16px;
-      transition: transform 0.15s;
-      display: inline-block;
+      content: "›"; font-size: 16px;
+      transition: transform 0.15s; display: inline-block;
     }
     details[open] summary::before { transform: rotate(90deg); }
 
@@ -264,21 +273,16 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+      display: flex; flex-direction: column; gap: 16px;
       margin-top: 8px;
     }
-
     .settings-card .field input {
       font-size: 14px;
       font-family: "SF Mono", "Fira Code", monospace;
     }
 
     .hint {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.5;
+      font-size: 12px; color: var(--muted); line-height: 1.5;
     }
     .hint a { color: var(--accent); text-decoration: none; }
 
@@ -288,24 +292,19 @@
       color: var(--accent);
       border-radius: 8px;
       font-family: var(--font);
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 13px; font-weight: 600;
       padding: 10px 16px;
-      cursor: pointer;
-      width: 100%;
+      cursor: pointer; width: 100%;
       transition: background 0.15s;
     }
     .save-btn:hover { background: var(--accent-dim); }
 
     #edit-link {
       display: block;
-      width: 100%;
-      max-width: 420px;
-      margin-top: 12px;
-      padding: 13px;
+      width: 100%; max-width: 420px;
+      margin-top: 12px; padding: 13px;
       text-align: center;
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 14px; font-weight: 600;
       color: var(--muted);
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -361,7 +360,6 @@
         <button class="typeahead-clear" id="food-clear" tabindex="-1" aria-label="Clear">×</button>
         <div class="typeahead-list" id="food-list" role="listbox"></div>
       </div>
-      <!-- hidden field holds the resolved food_name value -->
       <input type="hidden" id="food-value">
     </div>
 
@@ -373,17 +371,17 @@
                inputmode="decimal" placeholder="0" required>
         <span class="unit-badge">g</span>
       </div>
+      <div class="serving-hint" id="serving-hint"></div>
     </div>
 
     <button type="submit" id="submit-btn" onclick="submitEntry()">Log Entry</button>
 
   </div>
 
-  <!-- Settings — collapsed by default, stays closed after Save -->
+  <!-- Settings -->
   <details id="settings-panel">
     <summary>Settings</summary>
     <div class="settings-card">
-
       <div class="field">
         <label for="gh-token">GitHub Personal Access Token</label>
         <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxx"
@@ -396,53 +394,50 @@
           Stored only in this browser — never sent anywhere except GitHub.
         </p>
       </div>
-
       <div class="field">
         <label for="gh-owner">GitHub Username</label>
         <input type="text" id="gh-owner" placeholder="your-username"
                autocomplete="off" spellcheck="false">
       </div>
-
       <div class="field">
         <label for="gh-repo">Repository Name</label>
         <input type="text" id="gh-repo" placeholder="MyFitnessClone"
                autocomplete="off" spellcheck="false">
       </div>
-
       <button class="save-btn" onclick="saveSettings()">Save Settings</button>
     </div>
   </details>
 
-  <!-- Edit link -->
   <a href="Meal_Log_Editor.html" id="edit-link">Edit Meal Log</a>
-
   <div id="toast"></div>
 
   <script>
-    // ── Food library (name → food_id) ───────────────────────────
+    // ── Food library (name, id, default grams, serving label) ───
     // @@FOODS_START@@
     const FOODS = [
-      { name: "ButcherBox 85/15 Beef",            id: "butcherbox-8515-ground-beef" },
-      { name: "WFM Organic Sweet Potato",          id: "wfm-organic-sweet-potato" },
-      { name: "365 White Quinoa",                  id: "365-white-quinoa" },
-      { name: "Medium Hass Avocado",               id: "medium-hass-avocado" },
-      { name: "Organic Valley Grassmilk Cheddar",  id: "organic-valley-grassmilk-cheddar" },
-      { name: "Vital Farms Large Eggs",            id: "vital-farms-large-eggs" },
-      { name: "ButcherBox Grass-Fed Ribeye",       id: "butcherbox-grass-fed-ribeye" },
-      { name: "ButcherBox Chuck Roast",            id: "butcherbox-chuck-roast" },
-      { name: "Nature Made D3 Gummies",            id: "nature-made-d3-gummies" },
-      { name: "Garden of Life Vitamin C",          id: "garden-of-life-vitamin-c" },
+      { name: "ButcherBox 85/15 Beef",           id: "butcherbox-8515-ground-beef",      grams: 247.5, serving: "your avg"  },
+      { name: "WFM Organic Sweet Potato",         id: "wfm-organic-sweet-potato",         grams: 201.8, serving: "your avg"  },
+      { name: "365 White Quinoa",                 id: "365-white-quinoa",                 grams: 157.8, serving: "your avg"  },
+      { name: "Medium Hass Avocado",              id: "medium-hass-avocado",              grams: 65.7,  serving: "your avg"  },
+      { name: "Organic Valley Grassmilk Cheddar", id: "organic-valley-grassmilk-cheddar", grams: 39.2,  serving: "your avg"  },
+      { name: "Vital Farms Large Eggs",           id: "vital-farms-large-eggs",           grams: 296.3, serving: "your avg"  },
+      { name: "ButcherBox Grass-Fed Ribeye",      id: "butcherbox-grass-fed-ribeye",      grams: 225.2, serving: "your avg"  },
+      { name: "ButcherBox Chuck Roast",           id: "butcherbox-chuck-roast",           grams: 350.0, serving: "your avg"  },
+      { name: "Nature Made D3 Gummies",           id: "nature-made-d3-gummies",           grams: 7.5,   serving: "your avg"  },
+      { name: "Garden of Life Vitamin C",         id: "garden-of-life-vitamin-c",         grams: 1.0,   serving: "your avg"  },
     ];
     // @@FOODS_END@@
 
     // ── Typeahead state ─────────────────────────────────────────
     let activeIndex  = -1;
-    let selectedFood = null;   // { name, id } when confirmed
+    let selectedFood = null;
 
     const foodInput  = document.getElementById("food-input");
     const foodValue  = document.getElementById("food-value");
     const foodList   = document.getElementById("food-list");
     const foodClear  = document.getElementById("food-clear");
+    const gramsInput = document.getElementById("grams");
+    const servingHint= document.getElementById("serving-hint");
 
     function filterFoods(query) {
       if (!query) return FOODS;
@@ -467,12 +462,14 @@
         foodList.innerHTML = `<div class="typeahead-empty">No foods match "${query}"</div>`;
       } else {
         foodList.innerHTML = matches.map((f, i) =>
-          `<div class="typeahead-item" role="option" data-idx="${i}">${highlightMatch(f.name, query)}</div>`
+          `<div class="typeahead-item" role="option" data-idx="${i}">
+            <span class="typeahead-item-name">${highlightMatch(f.name, query)}</span>
+            <span class="typeahead-item-serving">${f.grams}g · ${f.serving}</span>
+          </div>`
         ).join("");
-        // attach click handlers
         foodList.querySelectorAll(".typeahead-item").forEach((el, i) => {
           el.addEventListener("mousedown", e => {
-            e.preventDefault();   // prevent blur firing first
+            e.preventDefault();
             selectFood(matches[i]);
           });
         });
@@ -481,28 +478,74 @@
     }
 
     function selectFood(food) {
-      selectedFood      = food;
-      foodInput.value   = food.name;
-      foodValue.value   = food.name;
+      selectedFood    = food;
+      foodInput.value = food.name;
+      foodValue.value = food.name;
       foodList.classList.remove("open");
       foodClear.classList.add("visible");
       foodInput.blur();
+
+      // Pre-fill grams with the food's default serving size (shown in grey)
+      gramsInput.value = food.grams;
+      gramsInput.classList.add("prefilled");
+      gramsInput._default = food.grams;
+
+      // Show serving hint
+      servingHint.innerHTML = `Your avg: <strong>${food.grams}g</strong> — tap to enter a different amount`;
+      servingHint.classList.add("visible");
     }
 
     function clearFood() {
-      selectedFood      = null;
-      foodInput.value   = "";
-      foodValue.value   = "";
+      selectedFood    = null;
+      foodInput.value = "";
+      foodValue.value = "";
       foodClear.classList.remove("visible");
       foodList.classList.remove("open");
+
+      // Clear grams pre-fill
+      gramsInput.value = "";
+      gramsInput.classList.remove("prefilled");
+      gramsInput._default = null;
+      servingHint.innerHTML = "";
+      servingHint.classList.remove("visible");
+
       foodInput.focus();
     }
 
+    // When user focuses grams, clear to blank so they can type fresh
+    gramsInput.addEventListener("focus", () => {
+      if (gramsInput.classList.contains("prefilled")) {
+        gramsInput.value = "";
+        gramsInput.classList.remove("prefilled");
+      }
+    });
+
+    // If user leaves grams blank, restore the default
+    gramsInput.addEventListener("blur", () => {
+      if (gramsInput.value === "" && gramsInput._default != null) {
+        gramsInput.value = gramsInput._default;
+        gramsInput.classList.add("prefilled");
+      }
+    });
+
+    // When user types, confirm they're overriding
+    gramsInput.addEventListener("input", () => {
+      gramsInput.classList.remove("prefilled");
+      gramsInput._default = null;
+    });
+
     foodInput.addEventListener("input", () => {
       const q = foodInput.value.trim();
-      selectedFood = null;         // user is typing again — reset selection
+      selectedFood = null;
       foodValue.value = "";
       foodClear.classList.toggle("visible", q.length > 0);
+
+      // Clear grams if user is re-typing food
+      gramsInput.value = "";
+      gramsInput.classList.remove("prefilled");
+      servingHint.innerHTML = "";
+      servingHint.classList.remove("visible");
+
       renderList(filterFoods(q), q);
     });
 
@@ -512,7 +555,6 @@
     });
 
     foodInput.addEventListener("blur", () => {
-      // small delay so mousedown on list items fires first
       setTimeout(() => foodList.classList.remove("open"), 150);
     });
 
@@ -520,7 +562,6 @@
     foodInput.addEventListener("keydown", e => {
       const items = foodList.querySelectorAll(".typeahead-item");
       if (!foodList.classList.contains("open") || items.length === 0) return;
-
       if (e.key === "ArrowDown") {
         e.preventDefault();
         activeIndex = Math.min(activeIndex + 1, items.length - 1);
@@ -530,8 +571,7 @@
       } else if (e.key === "Enter") {
         e.preventDefault();
         if (activeIndex >= 0) {
-          const query   = foodInput.value.trim();
-          const matches = filterFoods(query);
+          const matches = filterFoods(foodInput.value.trim());
           selectFood(matches[activeIndex]);
         }
         return;
@@ -539,14 +579,13 @@
         foodList.classList.remove("open");
         return;
       }
-
       items.forEach((el, i) => el.classList.toggle("active", i === activeIndex));
       if (activeIndex >= 0) items[activeIndex].scrollIntoView({ block: "nearest" });
     });
 
-    foodClear.addEventListener("click", clearFood);
+    foodClear.addEventListener("click", e => { e.stopPropagation(); clearFood(); });
+    foodClear.addEventListener("touchend", e => { e.preventDefault(); e.stopPropagation(); clearFood(); });
 
-    // Close list when clicking outside
     document.addEventListener("click", e => {
       if (!document.getElementById("typeahead-wrap").contains(e.target)) {
         foodList.classList.remove("open");
@@ -589,7 +628,6 @@
       localStorage.setItem("gh_token", token);
       localStorage.setItem("gh_owner", owner);
       localStorage.setItem("gh_repo",  repo);
-      // Close the details panel
       document.getElementById("settings-panel").removeAttribute("open");
       toast("Settings saved");
     }
@@ -676,7 +714,6 @@
 
         // Reset food and grams; keep date and meal for quick multi-entry
         clearFood();
-        document.getElementById("grams").value = "";
         document.getElementById("food-input").focus();
 
       } catch (err) {
@@ -694,8 +731,6 @@
     // ── Init ─────────────────────────────────────────────────────
     loadSettings();
     setDefaultDate();
-
-    // Open settings on first visit only (no token saved yet)
     if (!localStorage.getItem("gh_token")) {
       document.getElementById("settings-panel").setAttribute("open", "");
     }
