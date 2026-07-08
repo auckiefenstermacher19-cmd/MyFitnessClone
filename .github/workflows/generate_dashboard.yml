@@ -95,18 +95,21 @@ jobs:
       - name: Push changes
         run: git push
 
-      - name: Trigger WHOOP sync (which will update Health Tracker)
+      - name: Trigger Health Tracker consolidation
         if: success()
         env:
           DISPATCH_TOKEN: ${{ secrets.HEALTH_TRACKER_DISPATCH_TOKEN }}
           GH_USERNAME:    ${{ secrets.GH_USERNAME }}
         run: |
+          # Notify Health-Tracker directly (it listens for `meal_updated`). Meal logs
+          # no longer route through whoop-data, so food updates never depend on a
+          # WHOOP OAuth sync succeeding and a dead WHOOP band can't block them.
           curl -s -o /dev/null -w "%{http_code}" \
             -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $DISPATCH_TOKEN" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://api.github.com/repos/$GH_USERNAME/whoop-data/dispatches \
+            https://api.github.com/repos/$GH_USERNAME/Health-Tracker/dispatches \
             -d '{"event_type": "meal_updated"}' \
           | grep -q "204" && echo "Dispatch sent successfully." \
                           || echo "WARNING: Dispatch failed — scheduled fallback will run."
