@@ -18,6 +18,10 @@ on:
         required: false
         default: ""
 
+concurrency:
+  group: generate-dashboard
+  cancel-in-progress: false
+
 jobs:
   generate-dashboard:
     runs-on: ubuntu-latest
@@ -93,7 +97,13 @@ jobs:
             || git commit -m "chore: update Meal_Data_Dashboard [skip ci]"
 
       - name: Push changes
-        run: git push
+        run: |
+          for i in 1 2 3; do
+            if git push; then exit 0; fi
+            echo "Push rejected (attempt $i) — rebasing on latest main and retrying"
+            git pull --rebase origin main
+          done
+          git push
 
       - name: Trigger Health Tracker consolidation
         if: success()
