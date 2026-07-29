@@ -87,23 +87,47 @@ jobs:
             python generate_dashboard.py --meal-log meal_log.csv --food-library food_library.csv --user-goals user_goals.csv --dashboard Meal_Data_Dashboard.csv
           fi
 
-      - name: Commit updated dashboard
+      - name: Commit and push updated dashboard
+        env:
+          RECOMPUTE: ${{ steps.recompute.outputs.date }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Meal_Data_Dashboard.csv
-          git diff --cached --quiet \
-            && echo "No changes to commit — dashboard already up to date" \
-            || git commit -m "chore: update Meal_Data_Dashboard [skip ci]"
 
-      - name: Push changes
-        run: |
-          for i in 1 2 3; do
-            if git push; then exit 0; fi
-            echo "Push rejected (attempt $i) — rebasing on latest main and retrying"
-            git pull --rebase origin main
+          regenerate() {
+            if [ -n "$RECOMPUTE" ]; then
+              python generate_dashboard.py --meal-log meal_log.csv --food-library food_library.csv --user-goals user_goals.csv --dashboard Meal_Data_Dashboard.csv --recompute-from "$RECOMPUTE"
+            else
+              python generate_dashboard.py --meal-log meal_log.csv --food-library food_library.csv --user-goals user_goals.csv --dashboard Meal_Data_Dashboard.csv
+            fi
+          }
+
+          for attempt in 1 2 3; do
+            git add Meal_Data_Dashboard.csv
+            if git diff --cached --quiet; then
+              echo "No changes to commit - dashboard already up to date"
+              exit 0
+            fi
+            git commit -q -m "chore: update Meal_Data_Dashboard [skip ci]"
+
+            if git push; then
+              echo "Pushed on attempt $attempt."
+              exit 0
+            fi
+
+            # Meal_Data_Dashboard.csv is a GENERATED artifact, derived entirely from
+            # meal_log.csv + food_library.csv + user_goals.csv. Rebasing it is always
+            # wrong: two independently generated CSVs conflict line-by-line and the
+            # rebase halts (this is what killed the 2026-07-25 run). Instead discard
+            # our commit, take whatever main now has, and regenerate on top of it.
+            echo "Push rejected (attempt $attempt) - taking origin/main and regenerating."
+            git fetch origin main
+            git reset --hard FETCH_HEAD
+            regenerate
           done
-          git push
+
+          echo "::error::Could not push Meal_Data_Dashboard.csv after 3 attempts."
+          exit 1
 
       - name: Trigger Health Tracker consolidation
         if: success()
