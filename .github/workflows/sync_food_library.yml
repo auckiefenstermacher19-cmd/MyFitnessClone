@@ -10,6 +10,10 @@ on:
   # Manual trigger in case you want to force a resync
   workflow_dispatch:
 
+concurrency:
+  group: main-writer
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -32,14 +36,33 @@ jobs:
             --food-library food_library.csv \
             --html         Food_Log_Entry.html
 
-      - name: Commit updated Food_Log_Entry.html
+      - name: Commit and push updated Food_Log_Entry.html
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Food_Log_Entry.html
-          git diff --cached --quiet \
-            && echo "No changes to commit — food list already up to date" \
-            || git commit -m "chore: sync food list in Food_Log_Entry.html [skip ci]"
 
-      - name: Push changes
-        run: git push
+          for attempt in 1 2 3; do
+            git add Food_Log_Entry.html
+            if git diff --cached --quiet; then
+              echo "No changes to commit - food list already up to date"
+              exit 0
+            fi
+            git commit -q -m "chore: sync food list in Food_Log_Entry.html [skip ci]"
+
+            if git push; then
+              echo "Pushed on attempt $attempt."
+              exit 0
+            fi
+
+            # Food_Log_Entry.html is GENERATED from food_library.csv. Rebasing it would
+            # conflict line-by-line between two independently generated files - the exact
+            # failure that killed Generate Dashboard runs before 5e40e17. Discard our
+            # commit, take whatever main now has, and regenerate on top of it.
+            echo "Push rejected (attempt $attempt) - taking origin/main and regenerating."
+            git fetch origin main
+            git reset --hard FETCH_HEAD
+            python sync_food_library.py               --food-library food_library.csv               --html         Food_Log_Entry.html
+          done
+
+          echo "::error::Could not push Food_Log_Entry.html after 3 attempts."
+          exit 1

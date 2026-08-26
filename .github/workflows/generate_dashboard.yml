@@ -18,8 +18,14 @@ on:
         required: false
         default: ""
 
+# Shared with sync_food_library.yml on purpose. BOTH workflows auto-commit to main, so
+# they must not push at the same time - and they are triggered by different paths, so a
+# single commit touching meal_log.csv and food_library.csv starts both at once. A group
+# per workflow serialises each against itself but not against the other.
+# cancel-in-progress stays false: both jobs regenerate their artifact from the full source
+# files, so the newest queued run produces a correct result regardless of what it skipped.
 concurrency:
-  group: generate-dashboard
+  group: main-writer
   cancel-in-progress: false
 
 jobs:
