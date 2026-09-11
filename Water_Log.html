@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1117">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Water Log">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="water.webmanifest">
+  <link rel="apple-touch-icon" href="water-icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="water-icon-192.png">
+  <title>Water Log</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --border:    #2a2d3a;
+      --accent:    #4fa3ff;
+      --accent-dim:#14304d;
+      --goal:      #00e69a;
+      --text:      #e8eaf0;
+      --muted:     #7a7f94;
+      --error:     #f87171;
+      --radius:    10px;
+      --font:      -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.5;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    header {
+      width: 100%;
+      max-width: 420px;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    header p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px;
+      padding: 12px 14px;
+      appearance: none;
+      -webkit-appearance: none;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus { border-color: var(--accent); }
+    input[type="date"] { min-height: 48px; }
+
+    /* ── Day total ───────────────────────────────────────────── */
+    .total-block {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+      padding: 4px 0 2px;
+    }
+
+    .total {
+      font-size: 46px;
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -1.5px;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      transition: color 0.25s;
+    }
+    .total span {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      color: var(--muted);
+      margin-left: 7px;
+    }
+    .total-block.met .total { color: var(--goal); }
+
+    .bar-track {
+      width: 100%;
+      height: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      border-radius: 999px;
+      transition: width 0.35s cubic-bezier(0.34,1.1,0.64,1), background 0.25s;
+    }
+    .total-block.met .bar-fill { background: var(--goal); }
+
+    .total-caption {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.3px;
+    }
+
+    /* ── Bottle buttons ──────────────────────────────────────── */
+    .bottles {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      padding: 6px 0 2px;
+      min-height: 160px;
+    }
+
+    .bottle {
+      -webkit-appearance: none;
+      appearance: none;
+      font-family: var(--font);
+      color: var(--accent);
+      background: var(--accent-dim);
+      border: 2px solid var(--accent);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      min-width: 44px;
+      min-height: 44px;
+      flex-shrink: 0;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: transform 0.1s ease, opacity 0.15s, box-shadow 0.15s;
+      box-shadow: 0 6px 18px rgba(79,163,255,0.12);
+    }
+    .bottle:active { transform: scale(0.94); }
+    .bottle:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+
+    .bottle .amount {
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+    .bottle .sub {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      opacity: 0.75;
+    }
+
+    #bottle-big   { width: 150px; height: 150px; }
+    #bottle-small { width: 120px; height: 120px; }
+    #bottle-small .amount { font-size: 28px; }
+    #bottle-small .sub    { font-size: 10px; }
+
+    .bottle.busy {
+      opacity: 0.55;
+      cursor: progress;
+      box-shadow: none;
+    }
+
+    /* ── Toast ───────────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 32px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 12px 20px;
+      font-size: 14px; font-weight: 500;
+      white-space: nowrap;
+      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s;
+      opacity: 0; pointer-events: none; z-index: 100;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    #toast.success { border-color: var(--accent); color: var(--accent); }
+    #toast.error   { border-color: var(--error);  color: var(--error); }
+
+    /* ── Settings ────────────────────────────────────────────── */
+    details {
+      width: 100%; max-width: 420px; margin-top: 16px;
+    }
+    summary {
+      font-size: 12px; font-weight: 600;
+      letter-spacing: 0.6px; text-transform: uppercase;
+      color: var(--muted); cursor: pointer;
+      list-style: none;
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 0; user-select: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::before {
+      content: "›"; font-size: 16px;
+      transition: transform 0.15s; display: inline-block;
+    }
+    details[open] summary::before { transform: rotate(90deg); }
+
+    .settings-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex; flex-direction: column; gap: 16px;
+      margin-top: 8px;
+    }
+    .settings-card .field input {
+      font-size: 14px;
+      font-family: "SF Mono", "Fira Code", monospace;
+    }
+
+    .hint {
+      font-size: 12px; color: var(--muted); line-height: 1.5;
+    }
+    .hint a { color: var(--accent); text-decoration: none; }
+
+    .save-btn {
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      border-radius: 8px;
+      font-family: var(--font);
+      font-size: 13px; font-weight: 600;
+      padding: 10px 16px;
+      cursor: pointer; width: 100%;
+      touch-action: manipulation;
+      transition: background 0.15s;
+    }
+    .save-btn:hover { background: var(--accent-dim); }
+
+    #edit-link, #back-link {
+      display: block;
+      width: 100%; max-width: 420px;
+      margin-top: 12px; padding: 13px;
+      text-align: center;
+      font-size: 14px; font-weight: 600;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      text-decoration: none;
+      background: var(--surface);
+      transition: color 0.15s, border-color 0.15s;
+    }
+    #edit-link:hover, #back-link:hover { color: var(--text); border-color: var(--muted); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Water Log</h1>
+    <p>Two taps, one bottle logged</p>
+  </header>
+
+  <div class="card">
+
+    <!-- Date -->
+    <div class="field">
+      <label for="date">Date</label>
+      <input type="date" id="date" required>
+    </div>
+
+    <!-- Day total -->
+    <div class="total-block" id="total-block">
+      <div class="total" id="total">0<span>fl oz</span></div>
+      <div class="bar-track"><div class="bar-fill" id="bar"></div></div>
+      <div class="total-caption" id="total-caption">of 128 fl oz goal</div>
+    </div>
+
+    <!-- Bottles -->
+    <div class="bottles">
+      <button type="button" class="bottle" id="bottle-big" aria-label="Add 32 fluid ounces, big bottle">
+        <span class="amount">+32</span>
+        <span class="sub">Big bottle</span>
+      </button>
+      <button type="button" class="bottle" id="bottle-small" aria-label="Add 26 fluid ounces, small bottle">
+        <span class="amount">+26</span>
+        <span class="sub">Small bottle</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Settings -->
+  <details id="settings-panel">
+    <summary>Settings</summary>
+    <div class="settings-card">
+      <div class="field">
+        <label for="gh-token">GitHub Personal Access Token</label>
+        <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxx"
+               autocomplete="off" spellcheck="false">
+        <p class="hint">
+          Needs <strong>Contents: Read &amp; Write</strong> permission on this repo.<br>
+          <a href="https://github.com/settings/tokens?type=beta" target="_blank">
+            Create a fine-grained token →
+          </a><br>
+          Stored only in this browser — never sent anywhere except GitHub.
+        </p>
+      </div>
+      <div class="field">
+        <label for="gh-owner">GitHub Username</label>
+        <input type="text" id="gh-owner" placeholder="your-username"
+               autocomplete="off" spellcheck="false">
+      </div>
+      <div class="field">
+        <label for="gh-repo">Repository Name</label>
+        <input type="text" id="gh-repo" placeholder="MyFitnessClone"
+               autocomplete="off" spellcheck="false">
+      </div>
+      <button class="save-btn" onclick="saveSettings()">Save Settings</button>
+    </div>
+  </details>
+
+  <a href="Water_Log_Editor.html" id="edit-link">Edit Water Log</a>
+  <a href="Food_Log_Entry.html" id="back-link">← Food Log</a>
+  <div id="toast"></div>
+
+  <script>
+    // ── Constants ───────────────────────────────────────────────
+    const WATER_PATH   = "water_log.csv";
+    const WATER_HEADER = "log_id,user_id,log_date,bottle,fl_oz,created_at";
+    const DAY_GOAL     = 128;
+    const BOTTLES      = { big: 32, small: 26 };
+
+    // ── In-memory state ─────────────────────────────────────────
+    let rows    = [];   // every parsed row of water_log.csv
+    let busy    = 0;    // outstanding taps
+    let queue   = Promise.resolve();
+
+    // ── Helpers ─────────────────────────────────────────────────
+    function uuid() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function isoNow() {
+      return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+    }
+
+    function toast(msg, type = "success") {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.className = `show ${type}`;
+      clearTimeout(el._t);
+      el._t = setTimeout(() => { el.className = ""; }, 3200);
+    }
+
+    // Same CSV parser as Meal_Log_Editor.html
+    function parseCSV(text) {
+      const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+      const header = lines[0].split(",");
+      const out = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        const vals = [];
+        let cur = "", inQ = false;
+        for (let c = 0; c < line.length; c++) {
+          if (line[c] === '"') { inQ = !inQ; }
+          else if (line[c] === "," && !inQ) { vals.push(cur); cur = ""; }
+          else { cur += line[c]; }
+        }
+        vals.push(cur);
+        const obj = {};
+        header.forEach((h, idx) => { obj[h.trim()] = (vals[idx] || "").trim(); });
+        out.push(obj);
+      }
+      return { header, rows: out };
+    }
+
+    // localStorage can throw (private mode, data: URLs) — never let init die on it.
+    function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+    function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+
+    // ── Settings ────────────────────────────────────────────────
+    function loadSettings() {
+      document.getElementById("gh-token").value = lsGet("gh_token") || "";
+      document.getElementById("gh-owner").value = lsGet("gh_owner") || "";
+      document.getElementById("gh-repo").value  = lsGet("gh_repo")  || "";
+    }
+
+    function saveSettings() {
+      const token = document.getElementById("gh-token").value.trim();
+      const owner = document.getElementById("gh-owner").value.trim();
+      const repo  = document.getElementById("gh-repo").value.trim();
+      if (!token || !owner || !repo) {
+        toast("Fill in all three fields", "error"); return;
+      }
+      lsSet("gh_token", token);
+      lsSet("gh_owner", owner);
+      lsSet("gh_repo",  repo);
+      document.getElementById("settings-panel").removeAttribute("open");
+      toast("Settings saved");
+      queue = queue.then(loadWaterLog).catch(err => console.error(err));
+    }
+
+    function cfg() {
+      return {
+        token: lsGet("gh_token"),
+        owner: lsGet("gh_owner"),
+        repo:  lsGet("gh_repo"),
+      };
+    }
+
+    function needSettings() {
+      toast("Open Settings and save your GitHub details first", "error");
+      document.getElementById("settings-panel").setAttribute("open", "");
+    }
+
+    // ── Default date to today (device local) ────────────────────
+    function setDefaultDate() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      document.getElementById("date").value = `${y}-${m}-${day}`;
+    }
+
+    // ── GitHub API ──────────────────────────────────────────────
+    async function getFile(token, owner, repo, path) {
+      const res = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=main&t=${Date.now()}`,
+        { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+          cache: "no-store" }
+      );
+      if (res.status === 404) return null;            // file not created yet
+      if (!res.ok) throw new Error(`GitHub ${res.status}: ${await res.text()}`);
+      return res.json();
+    }
+
+    async function putFile(token, owner, repo, path, message, base64Content, sha) {
+      const body = { message, content: base64Content };
+      if (sha) body.sha = sha;
+      const res = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/vnd.github+json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        }
+      );
+      if (!res.ok) {
+        const err = new Error(`GitHub ${res.status}: ${await res.text()}`);
+        err.status = res.status;
+        throw err;
+      }
+      return res.json();
+    }
+
+    function decode(file) {
+      if (!file) return WATER_HEADER + "\n";            // not created yet
+      // Blobs over 1 MB come back with no inline content. Treating that as an
+      // empty log would rewrite the file down to its header, so refuse instead.
+      if (typeof file.content !== "string" || file.content === "" ||
+          (file.encoding && file.encoding !== "base64")) {
+        throw new Error("water_log.csv is too large to read inline - use the editor page");
+      }
+      return decodeURIComponent(escape(atob(file.content.replace(/\n/g, ""))));
+    }
+
+    function encode(text) {
+      return btoa(unescape(encodeURIComponent(text)));
+    }
+
+    // ── Total rendering (pure in-memory; no network) ────────────
+    function dayTotal(date) {
+      return rows
+        .filter(r => r.log_date === date)
+        .reduce((sum, r) => sum + (parseFloat(r.fl_oz) || 0), 0);
+    }
+
+    function renderTotal() {
+      const date  = document.getElementById("date").value;
+      const total = date ? dayTotal(date) : 0;
+      const pct   = Math.min(total / DAY_GOAL, 1) * 100;
+      const block = document.getElementById("total-block");
+
+      document.getElementById("total").innerHTML = `${total}<span>fl oz</span>`;
+      document.getElementById("bar").style.width = `${pct}%`;
+      block.classList.toggle("met", total >= DAY_GOAL);
+      document.getElementById("total-caption").textContent =
+        total >= DAY_GOAL ? `goal met · ${DAY_GOAL} fl oz` : `of ${DAY_GOAL} fl oz goal`;
+      return total;
+    }
+
+    // ── Load ────────────────────────────────────────────────────
+    async function loadWaterLog() {
+      const { token, owner, repo } = cfg();
+      if (!token || !owner || !repo) { renderTotal(); return; }
+      try {
+        const file = await getFile(token, owner, repo, WATER_PATH);
+        rows = parseCSV(decode(file)).rows;
+        renderTotal();
+      } catch (err) {
+        console.error(err);
+        toast(`Could not load water log: ${err.message}`, "error");
+      }
+    }
+
+    // ── Busy state ──────────────────────────────────────────────
+    function setBusy(delta) {
+      busy = Math.max(0, busy + delta);
+      const on = busy > 0;
+      for (const id of ["bottle-big", "bottle-small"]) {
+        const el = document.getElementById(id);
+        el.classList.toggle("busy", on);
+        el.setAttribute("aria-disabled", on ? "true" : "false");
+      }
+    }
+
+    // ── Append one bottle (serialised through the queue) ────────
+    async function append(bottle) {
+      const { token, owner, repo } = cfg();
+      const floz = BOTTLES[bottle];
+      const date = document.getElementById("date").value;
+      if (!date) { toast("Pick a date first", "error"); return; }
+
+      const logId = uuid();
+      const now   = isoNow();
+      const row   = `${logId},default,${date},${bottle},${floz},${now}`;
+
+      async function attempt() {
+        const file    = await getFile(token, owner, repo, WATER_PATH);
+        const current = decode(file);
+        // On a retry the first PUT may have landed after all - never append twice.
+        if (current.includes(logId)) return parseCSV(current).rows;
+        const updated = (current.endsWith("\n") ? current : current + "\n") + row + "\n";
+        await putFile(
+          token, owner, repo, WATER_PATH,
+          `water: +${floz} fl oz ${date}`,
+          encode(updated), file ? file.sha : null
+        );
+        return parseCSV(updated).rows;
+      }
+
+      try {
+        try {
+          rows = await attempt();
+        } catch (err) {
+          // Conflicting write landed between our GET and PUT — retry once with a fresh sha.
+          if (err.status === 409 || /GitHub 409/.test(err.message)) {
+            rows = await attempt();
+          } else {
+            throw err;
+          }
+        }
+        const total = renderTotal();
+        toast(`+${floz} fl oz · ${total} today`);
+      } catch (err) {
+        console.error(err);
+        toast(`Error: ${err.message}`, "error");
+      }
+    }
+
+    // ── Tap handling ────────────────────────────────────────────
+    function tap(bottle) {
+      const { token, owner, repo } = cfg();
+      if (!token || !owner || !repo) { needSettings(); return; }
+      setBusy(+1);
+      queue = queue
+        .then(() => append(bottle))
+        .catch(err => console.error(err))
+        .finally(() => setBusy(-1));
+    }
+
+    document.getElementById("bottle-big")
+      .addEventListener("click", () => tap("big"));
+    document.getElementById("bottle-small")
+      .addEventListener("click", () => tap("small"));
+
+    // Date change re-renders from memory — no network call.
+    document.getElementById("date")
+      .addEventListener("change", renderTotal);
+
+    // Coming back to the page (tab switch, home-screen app resume) refreshes.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        // Through the queue: a bare GET could land mid-append and clobber `rows`.
+        queue = queue.then(loadWaterLog).catch(err => console.error(err));
+      }
+    });
+
+    // ── Init ────────────────────────────────────────────────────
+    loadSettings();
+    setDefaultDate();
+    renderTotal();
+    if (!lsGet("gh_token") || !lsGet("gh_owner") || !lsGet("gh_repo")) {
+      document.getElementById("settings-panel").setAttribute("open", "");
+    } else {
+      loadWaterLog();
+    }
+  </script>
+
+</body>
+</html>

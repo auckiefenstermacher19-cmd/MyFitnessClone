@@ -299,7 +299,7 @@
     }
     .save-btn:hover { background: var(--accent-dim); }
 
-    #edit-link {
+    #edit-link, #water-link {
       display: block;
       width: 100%; max-width: 420px;
       margin-top: 12px; padding: 13px;
@@ -312,7 +312,7 @@
       background: var(--surface);
       transition: color 0.15s, border-color 0.15s;
     }
-    #edit-link:hover { color: var(--text); border-color: var(--muted); }
+    #edit-link:hover, #water-link:hover { color: var(--text); border-color: var(--muted); }
   </style>
 </head>
 <body>
@@ -409,6 +409,7 @@
   </details>
 
   <a href="Meal_Log_Editor.html" id="edit-link">Edit Meal Log</a>
+  <a href="Water_Log.html" id="water-link">Water Log</a>
   <div id="toast"></div>
 
   <script>

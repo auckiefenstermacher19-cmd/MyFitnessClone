@@ -1,0 +1,14 @@
+{
+  "name": "Water Log",
+  "short_name": "Water",
+  "start_url": "./Water_Log.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1117",
+  "theme_color": "#4fa3ff",
+  "icons": [
+    { "src": "water-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "water-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
