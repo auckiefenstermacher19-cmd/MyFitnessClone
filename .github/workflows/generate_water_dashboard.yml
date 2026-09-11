@@ -9,12 +9,15 @@ on:
 
   workflow_dispatch: {}
 
-# Shared with generate_dashboard.yml and sync_food_library.yml on purpose. All three
-# workflows auto-commit to main, so they must not push at the same time. cancel-in-progress
-# stays false: this job regenerates its artifact from the full water_log.csv, so the newest
-# queued run produces a correct result regardless of what it skipped.
+# Deliberately its own group, separate from the `main-writer` group that
+# generate_dashboard.yml and sync_food_library.yml share. In one group a meal push
+# can cancel a water run that is still pending, and the water dashboard silently
+# never regenerates. Pushing concurrently is safe here because the commit step below
+# retries: on a rejected push it takes origin/main and regenerates on top of it.
+# cancel-in-progress stays false: each run regenerates its artifact from the full
+# water_log.csv, so the newest queued run is correct regardless of what it skipped.
 concurrency:
-  group: main-writer
+  group: water-writer
   cancel-in-progress: false
 
 jobs:

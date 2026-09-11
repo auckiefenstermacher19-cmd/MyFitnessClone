@@ -463,12 +463,21 @@
     }
 
     // ── Default date to today (device local) ────────────────────
-    function setDefaultDate() {
+    // `autoDate` remembers the value we wrote, so the visibility handler can
+    // tell an untouched auto-filled date from one the user picked by hand.
+    let autoDate = "";
+
+    function todayStr() {
       const d = new Date();
       const y = d.getFullYear();
       const m = String(d.getMonth() + 1).padStart(2, "0");
       const day = String(d.getDate()).padStart(2, "0");
-      document.getElementById("date").value = `${y}-${m}-${day}`;
+      return `${y}-${m}-${day}`;
+    }
+
+    function setDefaultDate() {
+      autoDate = todayStr();
+      document.getElementById("date").value = autoDate;
     }
 
     // ── GitHub API ──────────────────────────────────────────────
@@ -568,10 +577,11 @@
     }
 
     // ── Append one bottle (serialised through the queue) ────────
-    async function append(bottle) {
+    // `date` is captured at tap time by tap() and passed in, never re-read
+    // here: the queued task runs later and the picker may have moved on.
+    async function append(bottle, date) {
       const { token, owner, repo } = cfg();
       const floz = BOTTLES[bottle];
-      const date = document.getElementById("date").value;
       if (!date) { toast("Pick a date first", "error"); return; }
 
       const logId = uuid();
@@ -597,14 +607,18 @@
           rows = await attempt();
         } catch (err) {
           // Conflicting write landed between our GET and PUT — retry once with a fresh sha.
-          if (err.status === 409 || /GitHub 409/.test(err.message)) {
+          // 409 is the documented conflict; a stale sha also surfaces as 422.
+          if (err.status === 409 || err.status === 422 ||
+              /GitHub (409|422)/.test(err.message)) {
             rows = await attempt();
           } else {
             throw err;
           }
         }
-        const total = renderTotal();
-        toast(`+${floz} fl oz · ${total} today`);
+        // Refresh whatever the picker shows now, but report the total for the
+        // date this tap was made against.
+        renderTotal();
+        toast(`+${floz} fl oz · ${dayTotal(date)} today`);
       } catch (err) {
         console.error(err);
         toast(`Error: ${err.message}`, "error");
@@ -615,9 +629,11 @@
     function tap(bottle) {
       const { token, owner, repo } = cfg();
       if (!token || !owner || !repo) { needSettings(); return; }
+      // Read the date NOW, not when the queued task runs.
+      const date = document.getElementById("date").value;
       setBusy(+1);
       queue = queue
-        .then(() => append(bottle))
+        .then(() => append(bottle, date))
         .catch(err => console.error(err))
         .finally(() => setBusy(-1));
     }
@@ -634,6 +650,14 @@
     // Coming back to the page (tab switch, home-screen app resume) refreshes.
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") {
+        // A standalone PWA resumed after midnight keeps yesterday's date.
+        // Only roll it forward if the field still holds what we auto-filled —
+        // a date the user picked by hand is theirs to keep.
+        const field = document.getElementById("date");
+        if (field.value === autoDate && autoDate !== todayStr()) {
+          setDefaultDate();
+          renderTotal();
+        }
         // Through the queue: a bare GET could land mid-append and clobber `rows`.
         queue = queue.then(loadWaterLog).catch(err => console.error(err));
       }

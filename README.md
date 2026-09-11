@@ -169,10 +169,12 @@ produces no commit. That is a success, not a failure. It is what happened on
 - Failure signal, visible without opening GitHub: a `water:` commit on `main`
   with no `chore: update Water_Data_Dashboard` commit after it.
 
-All three workflows share the concurrency group `main-writer` so they never
-push at the same time. One commit touching `meal_log.csv`, `food_library.csv`,
-and `water_log.csv` together starts all three, and the group makes them
-queue.
+`generate_dashboard.yml` and `sync_food_library.yml` share the concurrency group
+`main-writer` so they never push at the same time. The water workflow is
+deliberately in its own group, `water-writer`: in the shared group a meal push
+could cancel a still-pending water run and the water dashboard would silently
+never regenerate. It can push independently because its commit step retries — on
+a rejected push it takes `origin/main` and regenerates on top of it.
 
 ## Running the scripts by hand
 

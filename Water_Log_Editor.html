@@ -437,7 +437,9 @@
       const { token, owner, repo } = cfg();
       const res = await fetch(
         `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=main&t=${Date.now()}`,
-        { headers: { ...ghHeaders(token), "Cache-Control": "no-cache" } }
+        // `cache: "no-store"`, not a Cache-Control request header: GitHub's CORS
+        // preflight does not allow Cache-Control, so sending it blocks every GET.
+        { headers: ghHeaders(token), cache: "no-store" }
       );
       if (!res.ok) throw new Error(`GitHub ${res.status}: ${await res.text()}`);
       return res.json();
@@ -497,8 +499,15 @@
       return lines.join("\n") + "\n";
     }
 
-    function decodeB64(content) {
-      return decodeURIComponent(escape(atob(content.replace(/\n/g, ""))));
+    // Takes the whole contents-API file object, not just the string. Blobs over
+    // 1 MB come back with no inline content; treating that as an empty log
+    // would rewrite water_log.csv down to a bare header, so refuse instead.
+    function decodeB64(file) {
+      if (!file || typeof file.content !== "string" || file.content === "" ||
+          (file.encoding && file.encoding !== "base64")) {
+        throw new Error("water_log.csv is too large to read inline - open it on GitHub");
+      }
+      return decodeURIComponent(escape(atob(file.content.replace(/\n/g, ""))));
     }
 
     function encodeB64(text) {
@@ -517,7 +526,7 @@
       showState("Loading…");
       try {
         const file = await getFile(CSV_PATH);
-        const { header, rows } = parseCSV(decodeB64(file.content));
+        const { header, rows } = parseCSV(decodeB64(file));
         CSV_HEADER = header;
         ALL_ROWS   = rows;
         LOADED     = true;
@@ -756,7 +765,7 @@
     // Always re-fetch file + sha immediately before a write.
     async function fetchRows() {
       const file = await getFile(CSV_PATH);
-      const { header, rows } = parseCSV(decodeB64(file.content));
+      const { header, rows } = parseCSV(decodeB64(file));
       return { header, rows, sha: file.sha };
     }
 
@@ -769,7 +778,8 @@
         await putFile(CSV_PATH, message, encodeB64(rowsToCSV(header, rows)), sha);
         return { header, rows };
       } catch (err) {
-        if (err.status !== 409) throw err;
+        // 409 is the documented conflict; a stale sha also surfaces as 422.
+        if (err.status !== 409 && err.status !== 422) throw err;
         const fresh = await fetchRows();
         const finalRows = fresh.rows.filter(r => r.log_id !== removeId);
         await putFile(
