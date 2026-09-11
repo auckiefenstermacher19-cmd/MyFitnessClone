@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="theme-color" content="#0f1117">
+  <title>Water Log Editor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #0f1117;
+      --surface:    #1a1d27;
+      --border:     #2a2d3a;
+      --accent:     #4fa3ff;
+      --accent-dim: #14304d;
+      --goal:       #00e69a;
+      --text:       #e8eaf0;
+      --muted:      #7a7f94;
+      --error:      #f87171;
+      --radius:     10px;
+      --font:       -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.5;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+    }
+
+    header {
+      width: 100%;
+      max-width: 480px;
+      margin-bottom: 28px;
+    }
+
+    header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+    header p  { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+    /* Date picker card */
+    .date-card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    input[type="date"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px;
+      padding: 12px 14px;
+      appearance: none;
+      -webkit-appearance: none;
+      outline: none;
+      min-height: 48px;
+      transition: border-color 0.15s;
+    }
+    input[type="date"]:focus { border-color: var(--accent); }
+
+    /* Day total block — mirrors Water_Log.html */
+    .total-block {
+      width: 100%;
+      max-width: 480px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 20px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .total {
+      font-size: 46px;
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -1.5px;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      transition: color 0.25s;
+    }
+    .total span {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      color: var(--muted);
+      margin-left: 7px;
+    }
+    .total-block.met .total { color: var(--goal); }
+
+    .bar-track {
+      width: 100%;
+      height: 6px;
+      background: var(--accent-dim);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      border-radius: 999px;
+      transition: width 0.35s cubic-bezier(0.34,1.1,0.64,1), background 0.25s;
+    }
+    .total-block.met .bar-fill { background: var(--goal); }
+
+    .total-caption {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.3px;
+    }
+
+    /* Minus-a-bottle buttons */
+    .minus-row {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 28px;
+      margin-bottom: 24px;
+    }
+
+    .minus-btn {
+      width: 84px;
+      height: 84px;
+      min-width: 56px;
+      min-height: 56px;
+      border-radius: 50%;
+      border: 2.5px solid var(--error);
+      background: transparent;
+      color: var(--error);
+      font-family: var(--font);
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      transition: background 0.15s, transform 0.1s, opacity 0.15s;
+    }
+    .minus-btn small {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .minus-btn.small-bottle { width: 68px; height: 68px; font-size: 20px; }
+    .minus-btn:hover  { background: rgba(248, 113, 113, 0.12); }
+    .minus-btn:active { transform: scale(0.94); }
+    .minus-btn:disabled { opacity: 0.45; cursor: default; }
+
+    /* Entries section */
+    .entries-wrap {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .entries-header {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+      padding: 0 4px;
+    }
+
+    /* State views */
+    .state-box {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* Entry rows */
+    .entry-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .entry-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      transition: border-color 0.15s, opacity 0.2s;
+    }
+
+    .entry-row.deleting {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    /* Delete button — red circle with line */
+    .delete-btn {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2.5px solid var(--error);
+      background: transparent;
+      cursor: pointer;
+      touch-action: manipulation;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+      padding: 0;
+    }
+    .delete-btn:hover { background: rgba(248, 113, 113, 0.12); }
+    .delete-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: var(--error);
+      stroke-width: 2.5;
+      stroke-linecap: round;
+    }
+
+    /* Entry text */
+    .entry-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .entry-name {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .entry-meta {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .entry-amount {
+      flex-shrink: 0;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      text-align: right;
+    }
+
+    .entry-amount span {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--muted);
+    }
+
+    /* Summary row */
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 4px 0;
+      font-size: 13px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      margin-top: 4px;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 100;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    #toast.success { border-color: var(--accent); color: var(--accent); }
+    #toast.error   { border-color: var(--error);  color: var(--error); }
+
+    /* Back link */
+    #back-link {
+      display: block;
+      width: 100%;
+      max-width: 480px;
+      margin-top: 24px;
+      padding: 13px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      text-decoration: none;
+      background: var(--surface);
+      transition: color 0.15s, border-color 0.15s;
+    }
+    #back-link:hover { color: var(--text); border-color: var(--muted); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Water Log Editor</h1>
+    <p>Take a bottle back off — no numbers to type</p>
+  </header>
+
+  <!-- Date picker -->
+  <div class="date-card">
+    <label for="date">Date</label>
+    <input type="date" id="date">
+  </div>
+
+  <!-- Day total -->
+  <div class="total-block" id="total-block">
+    <div class="total" id="total">0<span>fl oz</span></div>
+    <div class="bar-track"><div class="bar-fill" id="bar"></div></div>
+    <div class="total-caption" id="total-caption">of 128 fl oz goal</div>
+  </div>
+
+  <!-- Minus a bottle -->
+  <div class="minus-row">
+    <button class="minus-btn" id="minus-32" type="button"
+            aria-label="Remove one big bottle, 32 fluid ounces"
+            onclick="minusBottle('big')">
+      &minus;32<small>Big</small>
+    </button>
+    <button class="minus-btn small-bottle" id="minus-26" type="button"
+            aria-label="Remove one small bottle, 26 fluid ounces"
+            onclick="minusBottle('small')">
+      &minus;26<small>Small</small>
+    </button>
+  </div>
+
+  <!-- Entries for selected date -->
+  <div class="entries-wrap">
+    <div class="entries-header" id="entries-label">Entries</div>
+    <div id="entries-container">
+      <div class="state-box">Select a date to load entries</div>
+    </div>
+  </div>
+
+  <a href="Water_Log.html" id="back-link">← Water Log</a>
+
+  <div id="toast"></div>
+
+  <script>
+    // ── Constants ────────────────────────────────────────────────
+    const CSV_PATH   = "water_log.csv";
+    const DAY_GOAL   = 128;
+    const BOTTLE_OZ  = { big: 32, small: 26 };
+    const BOTTLE_LBL = { big: "Big bottle", small: "Small bottle" };
+
+    // ── State ────────────────────────────────────────────────────
+    let ALL_ROWS    = [];   // full parsed water_log rows (all dates)
+    let CSV_HEADER  = ["log_id", "user_id", "log_date", "bottle", "fl_oz", "created_at"];
+    let LOADED_DATE = "";   // which date is currently displayed
+    let LOADED      = false;
+
+    // Every write goes through this queue, so two fast taps never
+    // put two PUTs in flight against the same sha.
+    let queue = Promise.resolve();
+
+    // ── GitHub helpers ───────────────────────────────────────────
+    // localStorage throws in some embedded/private contexts — never let that
+    // escape and leave the page half-initialised.
+    function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+
+    function cfg() {
+      return {
+        token: lsGet("gh_token"),
+        owner: lsGet("gh_owner"),
+        repo:  lsGet("gh_repo"),
+      };
+    }
+
+    function ghHeaders(token) {
+      return {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+      };
+    }
+
+    async function getFile(path) {
+      const { token, owner, repo } = cfg();
+      const res = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=main&t=${Date.now()}`,
+        { headers: { ...ghHeaders(token), "Cache-Control": "no-cache" } }
+      );
+      if (!res.ok) throw new Error(`GitHub ${res.status}: ${await res.text()}`);
+      return res.json();
+    }
+
+    async function putFile(path, message, base64Content, sha) {
+      const { token, owner, repo } = cfg();
+      const res = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+        {
+          method: "PUT",
+          headers: { ...ghHeaders(token), "Content-Type": "application/json" },
+          body: JSON.stringify({ message, content: base64Content, sha, branch: "main" }),
+        }
+      );
+      if (!res.ok) {
+        const err = new Error(`GitHub ${res.status}: ${await res.text()}`);
+        err.status = res.status;
+        throw err;
+      }
+      return res.json();
+    }
+
+    // ── CSV helpers ──────────────────────────────────────────────
+    function parseCSV(text) {
+      const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+      const header = lines[0].split(",");
+      const rows = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        // Handle quoted fields
+        const vals = [];
+        let cur = "", inQ = false;
+        for (let c = 0; c < line.length; c++) {
+          if (line[c] === '"') { inQ = !inQ; }
+          else if (line[c] === "," && !inQ) { vals.push(cur); cur = ""; }
+          else { cur += line[c]; }
+        }
+        vals.push(cur);
+        const obj = {};
+        header.forEach((h, idx) => { obj[h.trim()] = (vals[idx] || "").trim(); });
+        rows.push(obj);
+      }
+      return { header: header.map(h => h.trim()), rows };
+    }
+
+    function rowsToCSV(header, rows) {
+      const lines = [header.join(",")];
+      for (const row of rows) {
+        const vals = header.map(h => {
+          const v = row[h] || "";
+          return v.includes(",") ? `"${v}"` : v;
+        });
+        lines.push(vals.join(","));
+      }
+      return lines.join("\n") + "\n";
+    }
+
+    function decodeB64(content) {
+      return decodeURIComponent(escape(atob(content.replace(/\n/g, ""))));
+    }
+
+    function encodeB64(text) {
+      return btoa(unescape(encodeURIComponent(text)));
+    }
+
+    // ── Load water_log from GitHub ───────────────────────────────
+    async function loadWaterLog() {
+      const { token } = cfg();
+      if (!token) {
+        showState("No GitHub token found. Configure settings in Water Log first.");
+        setButtonsEnabled(false);
+        renderTotal(0);
+        return;
+      }
+      showState("Loading…");
+      try {
+        const file = await getFile(CSV_PATH);
+        const { header, rows } = parseCSV(decodeB64(file.content));
+        CSV_HEADER = header;
+        ALL_ROWS   = rows;
+        LOADED     = true;
+        setButtonsEnabled(true);
+        renderDate(document.getElementById("date").value);
+      } catch (err) {
+        showState(`Error loading water log: ${err.message}`);
+        setButtonsEnabled(false);
+        renderTotal(0);
+      }
+    }
+
+    // ── Rendering ────────────────────────────────────────────────
+    function rowsForDate(rows, dateStr) {
+      return rows.filter(r => r.log_date === dateStr);
+    }
+
+    function totalFor(rows, dateStr) {
+      return rowsForDate(rows, dateStr)
+        .reduce((s, r) => s + (parseFloat(r.fl_oz) || 0), 0);
+    }
+
+    function renderTotal(total) {
+      const rounded = Math.round(total);
+      const pct     = Math.min(total / DAY_GOAL, 1) * 100;
+      const block   = document.getElementById("total-block");
+
+      document.getElementById("total").innerHTML = `${rounded}<span>fl oz</span>`;
+      document.getElementById("bar").style.width = `${pct}%`;
+      block.classList.toggle("met", total >= DAY_GOAL);
+      document.getElementById("total-caption").textContent =
+        total >= DAY_GOAL ? `goal met · ${DAY_GOAL} fl oz` : `of ${DAY_GOAL} fl oz goal`;
+    }
+
+    function renderDate(dateStr) {
+      LOADED_DATE = dateStr;
+      const label = document.getElementById("entries-label");
+
+      if (!dateStr) {
+        label.textContent = "Entries";
+        renderTotal(0);
+        showState("Select a date to load entries.");
+        return;
+      }
+
+      label.textContent = `Entries for ${formatDate(dateStr)}`;
+
+      if (!LOADED) {
+        renderTotal(0);
+        showState("Water log not loaded yet.");
+        return;
+      }
+
+      const entries = rowsForDate(ALL_ROWS, dateStr);
+      renderTotal(entries.reduce((s, r) => s + (parseFloat(r.fl_oz) || 0), 0));
+
+      if (entries.length === 0) {
+        showState("No entries found for this date.");
+        return;
+      }
+
+      // Newest first
+      entries.sort((a, b) => cmpCreated(b, a));
+
+      const container = document.getElementById("entries-container");
+      container.innerHTML = "";
+
+      const list = document.createElement("div");
+      list.className = "entry-list";
+
+      entries.forEach(row => {
+        const div = document.createElement("div");
+        div.className = "entry-row";
+        div.dataset.logId = row.log_id;
+
+        const btn = document.createElement("button");
+        btn.className = "delete-btn";
+        btn.type = "button";
+        btn.setAttribute("aria-label", "Delete entry");
+        btn.innerHTML =
+          '<svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+          '<line x1="2" y1="7" x2="12" y2="7"/></svg>';
+        btn.addEventListener("click", () => deleteEntry(row.log_id));
+
+        const info = document.createElement("div");
+        info.className = "entry-info";
+        const name = document.createElement("div");
+        name.className = "entry-name";
+        name.textContent = BOTTLE_LBL[row.bottle] || row.bottle;
+        const meta = document.createElement("div");
+        meta.className = "entry-meta";
+        meta.textContent = formatTime(row.created_at);
+        info.append(name, meta);
+
+        const amount = document.createElement("div");
+        amount.className = "entry-amount";
+        amount.textContent = String(parseInt(row.fl_oz, 10) || 0);
+        const unit = document.createElement("span");
+        unit.textContent = " fl oz";
+        amount.appendChild(unit);
+
+        div.append(btn, info, amount);
+        list.appendChild(div);
+      });
+
+      container.appendChild(list);
+
+      const summary = document.createElement("div");
+      summary.className = "summary-row";
+      const total = entries.reduce((s, r) => s + (parseFloat(r.fl_oz) || 0), 0);
+      summary.innerHTML = `
+        <span>${entries.length} bottle${entries.length === 1 ? "" : "s"}</span>
+        <span>${Math.round(total)} fl oz total</span>
+      `;
+      container.appendChild(summary);
+    }
+
+    // Sort helper: created_at ascending, log_id as a stable tiebreak.
+    function cmpCreated(a, b) {
+      const ta = Date.parse(a.created_at || "") || 0;
+      const tb = Date.parse(b.created_at || "") || 0;
+      if (ta !== tb) return ta - tb;
+      return String(a.log_id).localeCompare(String(b.log_id));
+    }
+
+    // ── The fast path: minus one bottle ──────────────────────────
+    function minusBottle(bottle) {
+      const oz = BOTTLE_OZ[bottle];
+      // Capture the date at TAP time. The task below runs later, after the
+      // queue drains, and the picker may have moved on by then — the tap must
+      // always act on the date the user was looking at when they tapped.
+      const date = LOADED_DATE;
+      if (!date)        { toast("Pick a date first", "error"); return; }
+      if (!cfg().token) { toast("No GitHub token found", "error"); return; }
+
+      // Cheap local check so the empty case never costs a round trip.
+      if (LOADED && !newestOfBottle(ALL_ROWS, date, bottle)) {
+        toast(`No ${oz} fl oz entry on this date`, "error");
+        return;
+      }
+
+      enqueue(async () => {
+        setButtonsEnabled(false);
+        try {
+          const { header, rows, sha } = await fetchRows();
+
+          const target = newestOfBottle(rows, date, bottle);
+          if (!target) {
+            toast(`No ${oz} fl oz entry on this date`, "error");
+            ALL_ROWS = rows; CSV_HEADER = header;
+            renderDate(LOADED_DATE);
+            return;
+          }
+
+          const filtered = rows.filter(r => r.log_id !== target.log_id);
+          const written = await writeRows(
+            header, filtered, sha, `water: remove ${oz} fl oz ${date}`, target.log_id
+          );
+
+          ALL_ROWS   = written.rows;
+          CSV_HEADER = written.header;
+          renderDate(LOADED_DATE);
+
+          const newTotal = Math.round(totalFor(written.rows, date));
+          toast(`−${oz} fl oz · ${newTotal} today`);
+        } catch (err) {
+          toast(`Error: ${err.message}`, "error");
+        } finally {
+          setButtonsEnabled(true);
+        }
+      });
+    }
+
+    // Newest row (max created_at) of that bottle size on that date.
+    function newestOfBottle(rows, dateStr, bottle) {
+      const matches = rows.filter(r => r.log_date === dateStr && r.bottle === bottle);
+      if (!matches.length) return null;
+      return matches.reduce((best, r) => (cmpCreated(r, best) > 0 ? r : best), matches[0]);
+    }
+
+    // ── Delete a single entry (keeps confirm) ────────────────────
+    async function deleteEntry(logId) {
+      const domRow = document.querySelector(`[data-log-id="${logId}"]`);
+      if (!domRow) return;
+
+      const entry = ALL_ROWS.find(r => r.log_id === logId);
+      // Captured at click time — the queued task runs later and the picker may
+      // have moved on. Prefer the row's own date; fall back to the shown one.
+      const date  = (entry && entry.log_date) || LOADED_DATE;
+      const label = entry
+        ? `${BOTTLE_LBL[entry.bottle] || entry.bottle} · ${parseInt(entry.fl_oz, 10) || 0} fl oz · ${formatTime(entry.created_at)}`
+        : logId;
+
+      if (!confirm(`Remove this entry?\n\n${label}`)) return;
+
+      domRow.classList.add("deleting");
+
+      enqueue(async () => {
+        try {
+          const { header, rows, sha } = await fetchRows();
+          const filtered = rows.filter(r => r.log_id !== logId);
+
+          if (filtered.length === rows.length) {
+            toast("Entry not found in current file — may have already been removed.", "error");
+            ALL_ROWS = rows; CSV_HEADER = header;
+            renderDate(LOADED_DATE);
+            return;
+          }
+
+          const written = await writeRows(
+            header, filtered, sha,
+            `water: remove entry ${logId.slice(0, 8)} ${date}`,
+            logId
+          );
+
+          ALL_ROWS   = written.rows;
+          CSV_HEADER = written.header;
+          renderDate(LOADED_DATE);
+
+          const newTotal = Math.round(totalFor(written.rows, date));
+          toast(`Removed ${entry ? (parseInt(entry.fl_oz, 10) || 0) + " fl oz" : "entry"} · ${newTotal} today`);
+        } catch (err) {
+          const stillThere = document.querySelector(`[data-log-id="${logId}"]`);
+          if (stillThere) stillThere.classList.remove("deleting");
+          toast(`Error: ${err.message}`, "error");
+        }
+      });
+    }
+
+    // ── Write plumbing ───────────────────────────────────────────
+    function enqueue(task) {
+      queue = queue.then(task, task);
+      return queue;
+    }
+
+    // Always re-fetch file + sha immediately before a write.
+    async function fetchRows() {
+      const file = await getFile(CSV_PATH);
+      const { header, rows } = parseCSV(decodeB64(file.content));
+      return { header, rows, sha: file.sha };
+    }
+
+    // Write, and retry a 409 once with a fresh sha. On retry we re-apply the
+    // same intent — drop `removeId` — against whatever the file looks like
+    // now, so a concurrent append from the entry page is not clobbered.
+    // Returns { rows, header } as actually written.
+    async function writeRows(header, rows, sha, message, removeId) {
+      try {
+        await putFile(CSV_PATH, message, encodeB64(rowsToCSV(header, rows)), sha);
+        return { header, rows };
+      } catch (err) {
+        if (err.status !== 409) throw err;
+        const fresh = await fetchRows();
+        const finalRows = fresh.rows.filter(r => r.log_id !== removeId);
+        await putFile(
+          CSV_PATH, message,
+          encodeB64(rowsToCSV(fresh.header, finalRows)),
+          fresh.sha
+        );
+        return { header: fresh.header, rows: finalRows };
+      }
+    }
+
+    // ── UI helpers ───────────────────────────────────────────────
+    function setButtonsEnabled(on) {
+      document.getElementById("minus-32").disabled = !on;
+      document.getElementById("minus-26").disabled = !on;
+    }
+
+    function showState(msg) {
+      const container = document.getElementById("entries-container");
+      container.innerHTML = "";
+      const box = document.createElement("div");
+      box.className = "state-box";
+      box.textContent = msg;          // message can carry an API error string
+      container.appendChild(box);
+    }
+
+    function formatDate(str) {
+      if (!str) return "";
+      const [y, m, d] = str.split("-");
+      const date = new Date(+y, +m - 1, +d);
+      return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+    }
+
+    function formatTime(iso) {
+      if (!iso) return "";
+      const t = new Date(iso);
+      if (isNaN(t.getTime())) return "";
+      return t.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    }
+
+    function toast(msg, type = "success") {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.className = `show ${type}`;
+      clearTimeout(el._t);
+      el._t = setTimeout(() => { el.className = ""; }, 3200);
+    }
+
+    function setDefaultDate() {
+      const d   = new Date();
+      const y   = d.getFullYear();
+      const m   = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      document.getElementById("date").value = `${y}-${m}-${day}`;
+    }
+
+    // ── Init ─────────────────────────────────────────────────────
+    setDefaultDate();
+    LOADED_DATE = document.getElementById("date").value;
+    renderTotal(0);
+    loadWaterLog();
+
+    document.getElementById("date").addEventListener("change", e => {
+      renderDate(e.target.value);
+    });
+  </script>
+
+</body>
+</html>
