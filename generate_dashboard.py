@@ -23,18 +23,27 @@ Behaviour
 
 Usage
 -----
+    Run from the repo root. The DEFAULT_* constants below still point at a
+    data/source/ layout that does not exist in this repo, so every path has to
+    be passed explicitly until those defaults are corrected in code.
+
     # Normal incremental run (new meal log entries)
-    python scripts/generate_dashboard.py
+    python generate_dashboard.py \\
+        --meal-log     meal_log.csv \\
+        --food-library food_library.csv \\
+        --user-goals   user_goals.csv \\
+        --dashboard    Meal_Data_Dashboard.csv
 
-    # After updating user_goals.csv — recompute from the new goal's effective date
-    python scripts/generate_dashboard.py --recompute-from 2026-05-01
+    # After updating user_goals.csv - recompute from the new goal's effective date
+    python generate_dashboard.py \\
+        --meal-log     meal_log.csv \\
+        --food-library food_library.csv \\
+        --user-goals   user_goals.csv \\
+        --dashboard    Meal_Data_Dashboard.csv \\
+        --recompute-from 2026-07-29
 
-    # Override file paths
-    python scripts/generate_dashboard.py \\
-        --meal-log     data/source/meal_log.csv \\
-        --food-library data/source/food_library.csv \\
-        --user-goals   data/source/user_goals.csv \\
-        --dashboard    data/source/Meal_Data_Dashboard.csv
+    These are the exact invocations .github/workflows/generate_dashboard.yml
+    runs.
 
 Dashboard sections (separated by a blank column each)
 ------------------------------------------------------

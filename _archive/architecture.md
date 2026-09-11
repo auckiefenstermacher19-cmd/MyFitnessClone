@@ -1,3 +1,11 @@
+> SUPERSEDED. This is the pre-implementation spec written from the original
+> Excel workbook, kept for the schema and formula derivations only. It does not
+> describe how this repo works now. The repo is flat: there is no data\source\,
+> scripts\, queries\, docs\, or tests\ folder; goals live in user_goals.csv;
+> the VBA submit macro was replaced by Food_Log_Entry.html; and the open
+> questions in sections 10 and 11 were answered long ago. For how the repo
+> actually runs, read README.md in the folder above.
+
 # Excel-to-GitHub Nutrition Tracking Platform
 ## Architecture & Data Migration Plan
 
