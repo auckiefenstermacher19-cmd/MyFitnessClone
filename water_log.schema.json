@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "water_log.schema.json",
+  "title": "Water Log",
+  "description": "Append-only record of every water bottle logged per day. Each row = one bottle event (one tap on the entry page). There is no numeric edit path — undo deletes the newest row of a given bottle size for a date, on the editor page.",
+  "type": "object",
+  "required": [
+    "log_id",
+    "user_id",
+    "log_date",
+    "bottle",
+    "fl_oz",
+    "created_at"
+  ],
+  "properties": {
+
+    "log_id": {
+      "type": "string",
+      "description": "Stable primary key for this log entry. UUID v4. Never reused or reassigned.",
+      "format": "uuid",
+      "examples": ["a3f2c1d0-4e5b-4f6a-8c9d-1b2e3f4a5b6c"]
+    },
+
+    "user_id": {
+      "type": "string",
+      "description": "Identifier of the user who logged this entry. Use 'default' for single-user deployments. FK to users table (future). Required now to support multi-user without a schema migration later.",
+      "minLength": 1,
+      "maxLength": 100,
+      "examples": ["default", "user-abc123"]
+    },
+
+    "log_date": {
+      "type": "string",
+      "description": "Date the water was drunk, the device's local date at tap time. ISO 8601 date format YYYY-MM-DD.",
+      "format": "date",
+      "examples": ["2026-09-10", "2026-09-11"]
+    },
+
+    "bottle": {
+      "type": "string",
+      "description": "Which of the two fixed bottle sizes was tapped.",
+      "enum": ["big", "small"],
+      "examples": ["big", "small"]
+    },
+
+    "fl_oz": {
+      "type": "integer",
+      "description": "Fluid ounces for this bottle event. 32 for big, 26 for small. Not user-entered; derived from bottle at tap time and stored so historical totals do not shift if the fixed amounts ever change.",
+      "enum": [32, 26],
+      "examples": [32, 26]
+    },
+
+    "created_at": {
+      "type": "string",
+      "description": "ISO 8601 UTC timestamp of when this log entry was created. Immutable after insert.",
+      "format": "date-time",
+      "examples": ["2026-09-11T12:34:56Z"]
+    }
+
+  },
+
+  "additionalProperties": false
+}
