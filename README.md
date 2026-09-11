@@ -24,6 +24,18 @@ Floor map and routing: `CONTEXT.md`. Building law: `..\AGENTS.md`.
    It loads one date and deletes single entries, committing
    `log: remove entry <id prefix> (<food> <date>)`. It does not edit values.
 
+## Water log
+
+A sibling of the meal log, two taps and no typing. `Water_Log.html` (live at
+https://auckiefenstermacher19-cmd.github.io/MyFitnessClone/Water_Log.html) shows
+the day's running total and two blue buttons: `+32` (big bottle) and `+26`
+(small bottle). Each tap appends one row to `water_log.csv` and commits it as
+`water: +32 fl oz <date>`. `Water_Log_Editor.html` undoes a bottle (`−32` /
+`−26`, removing the newest row of that size for the date) or deletes a single
+row, committing `water: remove ...`. Both pages reuse the same `gh_token`,
+`gh_owner`, and `gh_repo` localStorage keys as the food log pages — no
+separate Settings step.
+
 ## The GitHub token
 
 Both pages write to GitHub from the browser, so they need a fine-grained
@@ -51,10 +63,14 @@ Source of truth, edited by a human or by the entry pages:
 - `user_goals.csv` — daily targets, one row per `effective_date`. Add a row,
   never rewrite an old one; dates before a new `effective_date` keep the goals
   that were in force then.
+- `water_log.csv` — every logged bottle. Columns: `log_id`, `user_id`,
+  `log_date`, `bottle`, `fl_oz`, `created_at`. Append-only, same shape as
+  `meal_log.csv` but with no editable numeric value.
 
 Generated, never hand-edited:
 
 - `Meal_Data_Dashboard.csv` — written by `generate_dashboard.py`.
+- `Water_Data_Dashboard.csv` — written by `generate_water_dashboard.py`.
 - The `FOODS` array inside `Food_Log_Entry.html`, between the
   `// @@FOODS_START@@` and `// @@FOODS_END@@` sentinels — written by
   `sync_food_library.py`. The rest of that file is hand-written.
@@ -62,7 +78,8 @@ Generated, never hand-edited:
 Reference, read-only:
 
 - `food_library.schema.json`, `meal_log.schema.json`, `user_goals.schema.json`,
-  `reference.schema.json` — column definitions and units.
+  `water_log.schema.json`, `reference.schema.json` — column definitions and
+  units.
 - `reference.csv` — nutrient metadata.
 - `_archive\architecture.md` — the superseded pre-implementation spec from the
   original Excel workbook. Kept for the formula derivations; it describes a
@@ -124,9 +141,38 @@ produces no commit. That is a success, not a failure. It is what happened on
   entry page's search box, or there is no `chore: sync food list` commit after
   the commit that changed `food_library.csv`.
 
-Both workflows share the concurrency group `main-writer` so they never push at
-the same time. One commit touching both `meal_log.csv` and `food_library.csv`
-starts both, and the group makes them queue.
+## Contract: Generate Water Dashboard
+
+- Entry point: `.github\workflows\generate_water_dashboard.yml`. Triggers on a
+  push to `main` touching `water_log.csv`, or on manual `workflow_dispatch`.
+- Interpreter: `ubuntu-latest`, Python 3.11 via `actions/setup-python@v5`.
+- Inputs: `water_log.csv` and the existing `Water_Data_Dashboard.csv`.
+- Process: runs
+
+      python generate_water_dashboard.py --water-log water_log.csv --dashboard Water_Data_Dashboard.csv
+
+  a full rewrite every run, sorted by date ascending, against the constant
+  `WATER_GOAL_FL_OZ = 128`. On a rejected push it discards its own commit,
+  takes `origin/main`, and regenerates on top, up to three attempts, same
+  recovery as Generate Dashboard.
+- Outputs: an updated `Water_Data_Dashboard.csv` with columns `date`,
+  `water_fl_oz`, `water_goal_fl_oz`, `water_pct_of_goal`, `water_entries`,
+  `water_big_count`, `water_small_count`, committed as
+  `chore: update Water_Data_Dashboard [skip ci]`, and a `water_updated`
+  repository dispatch to the Health-Tracker repo using the same
+  `HEALTH_TRACKER_DISPATCH_TOKEN` and `GH_USERNAME` secrets as the meal
+  dispatch. Health-Tracker treats water as a warn-only third source, so a
+  failed dispatch does not block the WHOOP+meal merge.
+- Done when: `Water_Data_Dashboard.csv` has a row for every date in
+  `water_log.csv`, and its last date equals the last `log_date` in
+  `water_log.csv`.
+- Failure signal, visible without opening GitHub: a `water:` commit on `main`
+  with no `chore: update Water_Data_Dashboard` commit after it.
+
+All three workflows share the concurrency group `main-writer` so they never
+push at the same time. One commit touching `meal_log.csv`, `food_library.csv`,
+and `water_log.csv` together starts all three, and the group makes them
+queue.
 
 ## Running the scripts by hand
 
