@@ -187,11 +187,9 @@ and it can be run with no flags.
 
 ## Are the workflows actually running
 
-Yes. As of 2026-09-10 the newest Actions runs are from 2026-08-26, when both
-workflows were triggered manually and both succeeded. The last push-triggered
-Generate Dashboard run was 2026-07-29 and it succeeded. There have been no runs
-since 2026-08-26 for the simple reason that nothing has been pushed to `main`
-since; the last meal was logged 2026-07-25. Failed runs do appear in the history
-on 2026-07-23 and 2026-07-25 — those are the rebase conflicts that commit
-5e40e17 fixed. Actions being blocked elsewhere on this account does not apply to
-this repo.
+Compare the newest `chore: update ...` commit on `origin/main` with the newest
+`log:` or `water:` commit before it (the failure signals above say what a miss
+looks like). Read `origin/main`, not the local files: the pages commit to GitHub
+and nothing pulls this clone. To compare CSV dates, read the last line of each
+file; do not load them whole. This repo is public, so the Actions billing hold
+on Auckie's private repos does not apply to it.
