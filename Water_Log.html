@@ -2,8 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <!-- [skill: Hard Rule 4 "Never disable zoom"] maximum-scale=1.0 removed; the 16px settings inputs below are the real fix for focus zoom.
+       [skill: Baseline] interactive-widget=resizes-content so the keyboard shrinks the layout on Android Chrome too. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+  <!-- [skill: section 10] page is dark-only, so one theme-color is correct; color-scheme tells Safari to draw native controls (date picker, password dots) dark. -->
   <meta name="theme-color" content="#0f1117">
+  <meta name="color-scheme" content="dark">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Water Log">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -13,6 +17,12 @@
   <title>Water Log</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      -webkit-tap-highlight-color: transparent; /* [skill: section 2] set once on html (body already had it; harmless duplicate) */
+      -webkit-text-size-adjust: 100%;           /* [skill: Baseline] no font inflation in landscape */
+      overscroll-behavior: none;                /* [skill: section 6] app, not a document: no rubber band or pull-to-refresh reload */
+    }
 
     :root {
       --bg:        #0f1117;
@@ -38,7 +48,12 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 24px 16px 48px;
+      /* [skill: section 7] black-translucent status bar + viewport-fit=cover puts the page under the clock and
+         Dynamic Island when opened from the home screen; pad content back out by the real insets. */
+      padding: calc(24px + env(safe-area-inset-top, 0px))
+               max(16px, env(safe-area-inset-right, 0px))
+               calc(48px + env(safe-area-inset-bottom, 0px))
+               max(16px, env(safe-area-inset-left, 0px));
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -217,7 +232,7 @@
     /* ── Toast ───────────────────────────────────────────────── */
     #toast {
       position: fixed;
-      bottom: 32px; left: 50%;
+      bottom: calc(32px + env(safe-area-inset-bottom, 0px)); left: 50%; /* [skill: section 7] toast clears the home bar */
       transform: translateX(-50%) translateY(80px);
       background: var(--surface);
       border: 1px solid var(--border);
@@ -242,7 +257,9 @@
       color: var(--muted); cursor: pointer;
       list-style: none;
       display: flex; align-items: center; gap: 6px;
-      padding: 8px 0; user-select: none;
+      padding: 8px 0;
+      user-select: none; -webkit-user-select: none; /* [skill: section 8] Safari still needs the prefix */
+      touch-action: manipulation;                   /* [skill: section 5] */
     }
     summary::-webkit-details-marker { display: none; }
     summary::before {
@@ -250,6 +267,7 @@
       transition: transform 0.15s; display: inline-block;
     }
     details[open] summary::before { transform: rotate(90deg); }
+    summary:active { color: var(--text); } /* [skill: section 2] tap highlight is off, so give press feedback */
 
     .settings-card {
       background: var(--surface);
@@ -260,7 +278,7 @@
       margin-top: 8px;
     }
     .settings-card .field input {
-      font-size: 14px;
+      font-size: 16px; /* [skill: section 4] was 14px: iOS zooms on focus under 16px and does not zoom back */
       font-family: "SF Mono", "Fira Code", monospace;
     }
 
@@ -279,9 +297,15 @@
       padding: 10px 16px;
       cursor: pointer; width: 100%;
       touch-action: manipulation;
-      transition: background 0.15s;
+      user-select: none; -webkit-user-select: none; /* [skill: section 8] */
+      transition: background 0.1s ease-out, transform 0.1s ease-out;
     }
-    .save-btn:hover { background: var(--accent-dim); }
+    /* [skill: section 1] hover gated to real mouse; ungated it stuck on after a tap */
+    @media (hover: hover) and (pointer: fine) {
+      .save-btn:hover { background: var(--accent-dim); }
+    }
+    /* [skill: section 5] feedback on press, not release */
+    .save-btn:active { background: var(--accent-dim); transform: scale(0.98); }
 
     #edit-link, #back-link {
       display: block;
@@ -294,9 +318,17 @@
       border-radius: 8px;
       text-decoration: none;
       background: var(--surface);
-      transition: color 0.15s, border-color 0.15s;
+      transition: color 0.1s ease-out, border-color 0.1s ease-out, transform 0.1s ease-out;
+      touch-action: manipulation;                    /* [skill: section 5] */
+      user-select: none; -webkit-user-select: none;  /* [skill: section 8] */
+      -webkit-touch-callout: none;                   /* [skill: section 8] no link-preview pop-up on long-press */
     }
-    #edit-link:hover, #back-link:hover { color: var(--text); border-color: var(--muted); }
+    /* [skill: section 1] */
+    @media (hover: hover) and (pointer: fine) {
+      #edit-link:hover, #back-link:hover { color: var(--text); border-color: var(--muted); }
+    }
+    /* [skill: section 5] */
+    #edit-link:active, #back-link:active { color: var(--text); border-color: var(--muted); transform: scale(0.98); }
   </style>
 </head>
 <body>
@@ -341,8 +373,9 @@
     <div class="settings-card">
       <div class="field">
         <label for="gh-token">GitHub Personal Access Token</label>
+        <!-- [skill: section 4] set the keyboard: no auto-capital, no autocorrect, return key says Done -->
         <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxx"
-               autocomplete="off" spellcheck="false">
+               autocomplete="off" spellcheck="false" autocapitalize="none" autocorrect="off" enterkeyhint="done">
         <p class="hint">
           Needs <strong>Contents: Read &amp; Write</strong> permission on this repo.<br>
           <a href="https://github.com/settings/tokens?type=beta" target="_blank">
@@ -354,12 +387,12 @@
       <div class="field">
         <label for="gh-owner">GitHub Username</label>
         <input type="text" id="gh-owner" placeholder="your-username"
-               autocomplete="off" spellcheck="false">
+               autocomplete="off" spellcheck="false" autocapitalize="none" autocorrect="off" enterkeyhint="done"><!-- [skill: section 4] -->
       </div>
       <div class="field">
         <label for="gh-repo">Repository Name</label>
         <input type="text" id="gh-repo" placeholder="MyFitnessClone"
-               autocomplete="off" spellcheck="false">
+               autocomplete="off" spellcheck="false" autocapitalize="none" autocorrect="off" enterkeyhint="done"><!-- [skill: section 4] -->
       </div>
       <button class="save-btn" onclick="saveSettings()">Save Settings</button>
     </div>
